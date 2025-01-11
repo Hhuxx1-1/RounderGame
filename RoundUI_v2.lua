@@ -382,12 +382,26 @@ function ROUND:Update(second, tick, players)
                     self.STATE = "Playing";
 
                     for _,playerid in ipairs(self.SURVIVOR) do
-                        Actor:changeCustomModel(playerid, [[skin_]]..math.random(1,20))
+                        -- Load Survivor Skin 
+                        local survivorSkin = SAVE_DATA:GET(playerid,"Equipped_Survivor")
+                        Actor:changeCustomModel(playerid, [[skin_]]..tonumber(survivorSkin.variableValue));
+
+                        if Player:setAttr(playerid, 21, 0.67) ~= 0 then 
+                            print(" Size Player Failed to Change")
+                        end 
                         Player:changeViewMode(playerid, 0 , true);
                     end 
 
                     for _,monster in ipairs(self.MONSTER) do
-                        Actor:changeCustomModel(monster, [[mob_3]])
+                        -- Load Default Monster Skin --Idle Animation;
+                        if Player:setAttr(monster, 21, 1.67) ~= 0 then 
+                            print(" Size Player Failed to Change")
+                        end 
+
+                        -- Load Survivor Skin 
+                        local monsterSkin = SAVE_DATA:GET(monster,"Equipped_Monster")
+
+                        Actor:changeCustomModel(monster, [[mob_]]..tonumber(monsterSkin.variableValue+2));
                         Player:changeViewMode(monster, 1 , true);
                     end 
 
@@ -448,7 +462,6 @@ function ROUND:Update(second, tick, players)
 
             if survivorCount < 1 then 
                 self.STATE = "Finishing"
-                self:CLEAR();
                 Chat:sendSystemMsg("All Survivor is Disconnected, Match Terminated");
             end 
 
@@ -463,7 +476,6 @@ function ROUND:Update(second, tick, players)
 
             if monsterCount < 1 then
                 self.STATE = "Finishing"
-                self:CLEAR();
                 Chat:sendSystemMsg("All Monster is Disconnected, Match Terminated");
             end 
 
@@ -542,12 +554,54 @@ end)
 -- Event Listener when player Started Ready 
 
 ScriptSupportEvent:registerEvent("Player.Ready",function(e)
-    print("Player is Ready",e)
+    -- print("Player is Ready",e)
     local playerid = e.eventobjid;
-    if ROUND.UI_PLAYER_STATE[ROUND.PLAYER_STATE_NOW] ~= nil then 
-        for i,a in ipairs(ROUND.UI_PLAYER_STATE[ROUND.PLAYER_STATE_NOW]) do 
-            Customui:openUIView(playerid,a);
+
+    if Player:setAttr(playerid, 21, 0.67) ~= 0 then 
+        print(" Size Player Failed to Change")
+    end 
+
+    local r,err = pcall(function()
+        table.insert(ROUND.PLAYER_READY,playerid);
+        SAVE_DATA:LOAD_ALL(playerid);
+    end )
+
+    if not r then 
+        print("Error Something(2) : ",err);
+    end 
+
+    -- if ROUND then --Check Todo When Join in middle of playing session ;
+    --     for i,a in ipairs(ROUND.UI_PLAYER_STATE[ROUND.PLAYER_STATE_NOW]) do 
+    --         Customui:openUIView(playerid,a);
+    --     end 
+    -- end 
+
+    -- check for equipped Monster and Survivor
+    local Equipped_Survivor = nil;
+    local Equipped_Monster  = nil;
+    local r , err = pcall(function()
+
+        Equipped_Survivor = SAVE_DATA:GET(playerid,"Equipped_Survivor");
+        Equipped_Monster  = SAVE_DATA:GET(playerid,"Equipped_Monster");
+
+        if Equipped_Survivor == nil then -- Assign default
+            SAVE_DATA:NEW(playerid,{"E_Surv","Equipped_Survivor","String",1})
+            SAVE_DATA:LOAD_ALL(playerid);
+        else
+            print("Equipped_Survivor",Equipped_Survivor);
         end 
+
+        if Equipped_Monster == nil then -- Assign default
+            SAVE_DATA:NEW(playerid,{"E_Mons","Equipped_Monster","String",1})
+            SAVE_DATA:LOAD_ALL(playerid);
+        else
+            print("Equipped_Monster",Equipped_Monster)
+        end 
+
+    end)
+
+    if not r then 
+        print("Error Something(1) : ",err);
     end 
 end)
 
