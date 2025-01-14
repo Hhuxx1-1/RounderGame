@@ -158,12 +158,10 @@ local function RunExecutionCutscene(playerid)
 
    -- Delay Execution for 3 Seconds which is 20x3
    RUNNER:NEW(function()
-    -- Remove From Survivor Alive 
-    table.remove(ROUND.GAME_DATA_NOW.surv,playerid);
     -- Add Into Survivor Died
     table.insert(ROUND.GAME_DATA_NOW.died,playerid);
-   end,{},60)
-   
+   end,{},120)
+
 end
 
 local function UpdateSurvivor(Survivor,tick)
@@ -204,8 +202,8 @@ local function UpdateSurvivor(Survivor,tick)
         local r,err = pcall(function()
             if curHP < 1 then 
                 -- survivor HP is 0;
-                -- immediately remove from ROUND.GAME_DATA_NOW.data_survivor and surv 
-                table.remove(ROUND.GAME_DATA_NOW.data_survivor,survivorid);
+                -- immediately remove from ROUND.GAME_DATA_NOW.data_survivor 
+                ROUND.GAME_DATA_NOW.data_survivor[survivorid] = nil; 
                 -- Run Executed Cutscene;
                 RunExecutionCutscene(survivorid);
             end 
@@ -236,8 +234,8 @@ ScriptSupportEvent:registerEvent("MONSTER_ACTION",function(e)
     local data = e.customdata;
     local index_data = tonumber(string.match(data, "%d+"))
     print("MONSTER "..playerid.." ACTION TRIGGERED : ",data);
-    -- data contain index of skill_ index or basic_attack
 
+    -- data contain index of skill_ index or basic_attack
     local r,err = pcall(function()
         
         if data == "basic_attack" then

@@ -19,6 +19,7 @@ MONSTER_DATA:NEW({
             action = function(playerid, ...)
                 -- print("Heavy Attack executed on player:", playerid)
             end,
+            icon = [[8_1029380338_1736871808]]
         },
         {
             key = "skill_2",
@@ -28,6 +29,7 @@ MONSTER_DATA:NEW({
             action = function(playerid, data)
                 -- print("Rage Speed executed on player:", playerid)
             end,
+            icon = [[8_1029380338_1736871805]]
         },
         {
             key = "skill_3",
@@ -37,6 +39,7 @@ MONSTER_DATA:NEW({
             action = function(playerid, data)
                 -- print("Rage Speed executed on player:", playerid)
             end,
+            icon = [[8_1029380338_1736871798]]
         },
     },
     passive_skill = {
@@ -64,7 +67,7 @@ MONSTER_DATA:NEW({
         RUNNER:NEW(function()
             -- get each Object in That 3x3 Area 
             local x,y,z     = f_H:GET_POS(playerid)
-            local ox,oz     = f_H:GET_DIR_ACTOR(playerid)
+            local ox,_,oz     = f_H:GET_DIR_ACTOR(playerid)
             local obj       = f_H:getObj_Area(x+(ox*2),y+2,z+(oz*2),2,2,2);
 
             -- separate the player and creature from it 
@@ -81,26 +84,26 @@ MONSTER_DATA:NEW({
             -- if the range is more than half the damage output to that player or creature 
             for i,target_playerid in ipairs(player) do 
                 local tx,ty,tz = f_H:GET_POS(target_playerid);
-                local calculated_damage = damage * (1 - (math.abs((tx-x)+(ty-y)+(tz-z))/effectiveRange))
+                local calculated_damage = damage * ((math.random(10,15)/10) - (math.abs((tx-x)+(ty-y)+(tz-z))/effectiveRange))
                 f_H:Damage2Player(playerid,target_playerid,calculated_damage);
             end 
             -- do the same for creature 
             for i,target_creature in ipairs(creature) do
                 local tx,ty,tz = f_H:GET_POS(target_creature);
-                local calculated_damage = damage * (1 - (math.abs((tx-x)+(ty-y)+(tz-z))/effectiveRange))
+                local calculated_damage = damage * ((math.random(10,15)/10) - (math.abs((tx-x)+(ty-y)+(tz-z))/effectiveRange))
                 f_H:Damage2Player(playerid,target_creature,calculated_damage);
             end 
             -- Enable back the Movement after 0.8
             RUNNER:NEW(function()
                 f_H:SET_ACTOR(playerid,"MOVE",true);
-            end,{},10)
+            end,{},5)
 
-        end,{},12) -- each thick is 0.05 seconds 
+        end,{},6) -- each thick is 0.05 seconds 
 
     end,
     execute_attack = function(playerid,targetid,data)
         -- Executed on Target 
-        print("Target : ",targetid,"Playerid : ",playerid)
+        print("Executing Target : ",targetid,"Playerid : ",playerid);
     end,
     price = 0,
     picture_icon = 0,

@@ -89,6 +89,19 @@ function ROUND:removeDuplicates()
     self.PLAYER_READY = cleanedList
 end
 
+function cleanDuplicate(t)
+    local unique = {}
+    local result = {}
+
+    for _, value in ipairs(t) do
+        if not unique[value] then
+            unique[value] = true
+            table.insert(result, value)
+        end
+    end
+
+    return result;
+end
 
 -- Function to initialize a new round
 function ROUND:NEW(currentSecond,players)
@@ -380,13 +393,13 @@ end
 local Doll = 123
 
 function ROUND:START_TRANSITION(players)
-    local positions = {x = 70, y = 5, z = 29};
+    local positions = {x = 70.5, y = 5.5, z = 29.5};
     local monsterModel = 2
 
     -- Spawn or set up Doll
     if Creature:getAttr(Doll, 2) ~= 0 then
         local r, obj = World:spawnCreature(
-            positions.x, positions.y, positions.z+3, 
+            positions.x, positions.y-0.5, positions.z+3, 
             monsterModel, 1)
             
         if r == 0 then
@@ -537,6 +550,8 @@ function ROUND:Update(second, tick, players)
                 Chat:sendSystemMsg("Monster is Disconnected, Match Terminated");
             end 
 
+            -- make sure no duplicate on died table 
+            self.GAME_DATA_NOW.died = cleanDuplicate(self.GAME_DATA_NOW.died);
             -- check if number of Survivor Dead more than Survivor itself;
             if tlen(self.GAME_DATA_NOW.died) >= tlen(self.GAME_DATA_NOW.surv) then 
                 -- All player have been Executed by The Monster
