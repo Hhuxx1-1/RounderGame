@@ -9,7 +9,7 @@ local MAP_DATA = {
     ,   RangeStart      = 2                         --Dimension Radius for Start
     ,   PositionMonster = {x = 0, y = 0 , z = 0 }
     ,   SkyBoxTemplate  = 7
-    ,   FilterTemplate  = 7
+    ,   FilterTemplate  = 9
     ,   HourTime        = 4
     ,   ImageUrl        = "https://example.com/example.png"
     },

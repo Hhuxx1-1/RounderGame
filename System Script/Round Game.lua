@@ -148,7 +148,7 @@ function ROUND:CheckPlayerZoneState(playerID)
     if result == 0 then
         local blockResult, blockID = Block:getBlockID(x, 1, z)
         if blockResult == 0 then
-            return RoundBlockState[tostring(blockID)] or "Unknown" , blockID;
+            return RoundBlockState[tostring(blockID)] or " " , blockID;
         else
             return "Block ID not found"
         end
@@ -286,14 +286,44 @@ function ROUND:ShowCountDown_Lobby(second,players)
 end 
 
 function ROUND:GAME_ADD(map,monster,survivor)
-    ROUND.GAME_DATA_NOW = {
+
+    -- load Monster Data 
+    local monsterData = {};
+    for _,_monster in ipairs(monster) do 
+
+        -- add into monsterData table MONSTER_DATA by Fetch 
+        monsterData[_monster] = MONSTER_DATA:FETCH(SAVE_DATA:GET(_monster,"Equipped_Monster").variableValue);
+
+        -- Load Level equipped by Player 
+        local level = SAVE_DATA:GET(_monster,monsterData[_monster].key.."_LEVEL") or 1;
+        monsterData[_monster].level = level;
+
+        -- Add Skill Active holder in CD as 0 for later use 
+        for i,skill in ipairs(monsterData[_monster].skill) do
+            if monsterData[_monster].CD == nil then 
+                monsterData[_monster].CD = {};
+            end
+            if i <= math.ceil(level/5) then  
+                monsterData[_monster].CD[skill.key] = 0;
+            else 
+                monsterData[_monster].CD[skill.key] = "locked"; --skill not unlocked;
+            end 
+        end 
+        monsterData[_monster].CD["basic_attack"] = 0;
+
+    end 
+
+    self.GAME_DATA_NOW = {
         map  = map      ,
         mons = monster  ,
         surv = survivor ,
         died = {}       ,
         time = 120      ,
         obje = "Not Yet Available",
+        data_monster = monsterData
     }
+
+    print("Game New : ",self.GAME_DATA_NOW)
 end
 
 function ROUND:GAME_CLEAR()
@@ -302,14 +332,14 @@ end
 
 local Doll = 123
 
-function ROUND:START_TRANSITION()
-    local positions = {x = 70, y = 5, z = 30};
+function ROUND:START_TRANSITION(players)
+    local positions = {x = 70, y = 5, z = 29};
     local monsterModel = 2
 
     -- Spawn or set up Doll
     if Creature:getAttr(Doll, 2) ~= 0 then
         local r, obj = World:spawnCreature(
-            positions.x, positions.y, positions.z+2, 
+            positions.x, positions.y, positions.z+3, 
             monsterModel, 1)
             
         if r == 0 then
@@ -317,6 +347,14 @@ function ROUND:START_TRANSITION()
             Creature:setAttr(Doll, 21, 1.2)
             Actor:changeCustomModel(Doll, [[mob_3]])
         end
+
+        -- SET the Text Name into Monster Name; 
+        local r, name = Player:getNickname(self.MONSTER[1]);
+        for _, playerid in ipairs(players) do
+            Customui:setText(playerid,UIS.Intro_UI,UIS.Intro_UI.."_5",name);
+        end
+        Actor:setFaceYaw(Doll,0);
+        Actor:playAct(Doll,6);
     end
 
     -- Function to set up players (common logic for monsters and survivors)
@@ -325,7 +363,7 @@ function ROUND:START_TRANSITION()
             Player:setPosition(player, position.x , position.y, position.z);
             Actor:changeCustomModel(player, [[mob_2]])
             if Player:SetCameraMountPos(player, position) == 0 then
-                Player:SetCameraRotTransformTo(player, {x = 0, y = -35}, 1, 1);
+                Player:SetCameraRotTransformTo(player, {x = 0, y = -30}, 1, 1);
             end
         end
     end
@@ -373,6 +411,7 @@ function ROUND:Update(second, tick, players)
             -- teleport each player to play arena;
             -- print(ROUND.GAME_DATA_NOW);
             
+            ROUND:adjustModel();
             local checkTeleport = self:teleportPlayerToPlayArena(self.PLAYER_READY);
 
             -- check if all player ready is successfully Teleported to Arena
@@ -381,30 +420,7 @@ function ROUND:Update(second, tick, players)
                     self.UI_STATE = "playing";
                     self.STATE = "Playing";
 
-                    for _,playerid in ipairs(self.SURVIVOR) do
-                        -- Load Survivor Skin 
-                        local survivorSkin = SAVE_DATA:GET(playerid,"Equipped_Survivor")
-                        Actor:changeCustomModel(playerid, [[skin_]]..tonumber(survivorSkin.variableValue));
-
-                        if Player:setAttr(playerid, 21, 0.67) ~= 0 then 
-                            print(" Size Player Failed to Change")
-                        end 
-                        Player:changeViewMode(playerid, 0 , true);
-                    end 
-
-                    for _,monster in ipairs(self.MONSTER) do
-                        -- Load Default Monster Skin --Idle Animation;
-                        if Player:setAttr(monster, 21, 1.67) ~= 0 then 
-                            print(" Size Player Failed to Change")
-                        end 
-
-                        -- Load Survivor Skin 
-                        local monsterSkin = SAVE_DATA:GET(monster,"Equipped_Monster")
-
-                        Actor:changeCustomModel(monster, [[mob_]]..tonumber(monsterSkin.variableValue+2));
-                        Player:changeViewMode(monster, 1 , true);
-                    end 
-
+                    ROUND:adjustModel();
                 end)
             end 
 
@@ -413,18 +429,8 @@ function ROUND:Update(second, tick, players)
                 self.UI_STATE = "intro";
                 MAP_VOTING:EndVoting();
                 self:SELECT(1) -- Default to selecting 1 monster
-                self:START_TRANSITION();
+                self:START_TRANSITION(players);
                 self:GAME_ADD(MAP_VOTING:fetch(MAP_VOTING.SELECTED_MAP),self.MONSTER,self.SURVIVOR);
-                -- SET the Text Name into Monster Name; 
-                local r, name = Player:getNickname(self.MONSTER[1]);
-                for _, playerid in ipairs(players) do
-                    Customui:setText(playerid,UIS.Intro_UI,UIS.Intro_UI.."_5",name);
-                end
-                Actor:setFaceYaw(Doll,0);
-                threadpool:delay(1,function()
-                    Actor:playAct(Doll,6);
-                    Actor:setFaceYaw(Doll,0);
-                end)
             else 
                 if tlen(self.SURVIVOR) > 0 and tlen(self.MONSTER) > 0 then
                     -- there is player and Match Can Start 
@@ -441,6 +447,11 @@ function ROUND:Update(second, tick, players)
         end
     elseif self.STATE == "Playing" then
         if second < self.TIME_END then
+
+            -- Each 2 Second adjust player Model 
+            if math.fmod(tick,40) == 0 then 
+                ROUND:adjustModel()
+            end 
             -- Notify players of remaining game time
             -- self:setNotifierSystem("Game is running: " .. (self.TIME_END - second) .. " s left", players)
             local timer = self.TIME_END - second ;
@@ -486,7 +497,7 @@ function ROUND:Update(second, tick, players)
             end 
 
             -- update Action here 
-            ACTION:UPDATE()
+            ACTION:UPDATE(tick)
         else
             self.STATE = "Finishing"
         end
@@ -639,9 +650,9 @@ function ROUND:teleportPlayerToPlayArena(players)
     local textLoading = "Loading "..(check/tlen(self.PLAYER_READY)*100).."% \n"
     for i=1,tlen(self.PLAYER_READY) do 
         if i <= check then 
-            textLoading = textLoading..proggressBarLegacy[1];
-        else 
             textLoading = textLoading..proggressBarLegacy[2];
+        else 
+            textLoading = textLoading..proggressBarLegacy[1];
         end 
     end 
 
@@ -662,4 +673,31 @@ function ROUND:teleportPlayerToPlayArena(players)
     end 
 
     return check;
+end
+
+function ROUND:adjustModel()
+    for _,playerid in ipairs(self.SURVIVOR) do
+        -- Load Survivor Skin 
+        local survivorSkin = SAVE_DATA:GET(playerid,"Equipped_Survivor")
+        Actor:changeCustomModel(playerid, [[skin_]]..tonumber(survivorSkin.variableValue));
+
+        if Player:setAttr(playerid, 21, 0.67) ~= 0 then 
+            print(" Size Player Failed to Change")
+        end 
+        Player:changeViewMode(playerid, 0 , true);
+    end 
+
+    for _,monster in ipairs(self.MONSTER) do
+        -- Load Default Monster Skin --Idle Animation;
+        if Player:setAttr(monster, 21, 0.80) ~= 0 then 
+            print(" Size Player Failed to Change")
+        end 
+
+        -- Load Survivor Skin 
+        local monsterSkin = SAVE_DATA:GET(monster,"Equipped_Monster")
+
+        Actor:changeCustomModel(monster, [[mob_]]..tonumber(monsterSkin.variableValue+2));
+        Player:changeViewMode(monster, 1 , true);
+    end 
+
 end
