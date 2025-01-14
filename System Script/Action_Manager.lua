@@ -115,6 +115,13 @@ local function UpdateMonster(MONSTER_DATA,tick)
                     Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].pic,color.disabled);
                 end 
             end 
+
+            -- set the Picture of Skill 
+            if skill.icon then 
+                Customui:setTexture(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].pic,skill.icon);
+            else 
+                Customui:setTexture(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].pic,[[8_1029380338_1719587945]]);
+            end 
         end 
 
         -- Basic Attack Cooldown Logic 
