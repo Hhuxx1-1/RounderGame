@@ -50,7 +50,7 @@ local function UpdateMonster(MONSTER_DATA,tick)
             if data.passive_skill then
                 -- print("Passive Skill is Found : ", data.passive_skill);
                 local r ,err = pcall(data.passive_skill.action,playerid);
-                
+
                 if not r then 
                     print(err)
                 end 
@@ -143,8 +143,77 @@ local function UpdateMonster(MONSTER_DATA,tick)
     end 
 end
 
-local function Update()
+local function RunExecutionCutscene(playerid)
+   -- Get Current Monster on Round 
+   local monster = ROUND.GAME_DATA_NOW.data_monster;
+   for monsterid , data_monster in pairs(monster) do
+        local execute_attack = data_monster.execute_attack;
+        if execute_attack and type(execute_attack) == "function" then
+            local r,err = pcall(execute_attack,monsterid,playerid)
+            if not r then
+                print("EXCUTE:",err);
+            end 
+        end 
+   end 
+
+   -- Delay Execution for 3 Seconds which is 20x3
+   RUNNER:NEW(function()
+    -- Remove From Survivor Alive 
+    table.remove(ROUND.GAME_DATA_NOW.surv,playerid);
+    -- Add Into Survivor Died
+    table.insert(ROUND.GAME_DATA_NOW.died,playerid);
+   end,{},60)
+   
+end
+
+local function UpdateSurvivor(Survivor,tick)
     
+    local UI = "7455201304258484466";
+
+    local element = {
+        hp_bar = 4, 
+        hp_text = 5, 
+        backpack = {
+            {btn = 48 } , {btn = 55} , {btn = 62} 
+        }
+    }
+
+    local hp_bar_maximum_length,hp_bar_maximum_hight = 297 , 34;
+
+    for survivorid,data in pairs(Survivor) do 
+
+        -- Update the HP Bar 
+        local r1,maxHP = Player:getAttr(survivorid,1);
+        local r2,curHP = Player:getAttr(survivorid,2);
+        -- make sure that both are exist 
+        if r1 == 0 and r2 == 0 then 
+            Customui:setSize(survivorid,UI,UI.."_"..element.hp_bar,curHP/maxHP*hp_bar_maximum_length,hp_bar_maximum_hight);
+            Customui:setText(survivorid,UI,UI.."_"..element.hp_text,math.floor(curHP));
+        end 
+
+        -- Update the Backpack Bar 
+        for slot,backpack in ipairs(data.backpack) do 
+            if backpack.name == "empty" then 
+                Customui:hideElement(survivorid,UI,UI.."_"..element.backpack[slot].btn);
+            else 
+                Customui:showElement(survivorid,UI,UI.."_"..element.backpack[slot].btn);
+            end 
+        end 
+
+        -- check if Survivor is Out of HP 
+        local r,err = pcall(function()
+            if curHP < 1 then 
+                -- survivor HP is 0;
+                -- immediately remove from ROUND.GAME_DATA_NOW.data_survivor and surv 
+                table.remove(ROUND.GAME_DATA_NOW.data_survivor,survivorid);
+                -- Run Executed Cutscene;
+                RunExecutionCutscene(survivorid);
+            end 
+        end)
+        if not r then
+            print("Error 195 : ",err);
+        end 
+    end
 end
 
 function ACTION:UPDATE(tick)
@@ -154,7 +223,12 @@ function ACTION:UPDATE(tick)
     if not r then 
         print(err);
     end 
+
+    local r,err = pcall(UpdateSurvivor,ROUND.GAME_DATA_NOW.data_survivor,tick)
     
+    if not r then 
+        print(err);
+    end 
 end
 
 ScriptSupportEvent:registerEvent("MONSTER_ACTION",function(e)
@@ -175,7 +249,7 @@ ScriptSupportEvent:registerEvent("MONSTER_ACTION",function(e)
                     -- Execute the Skill
                     local basic_attack = ROUND.GAME_DATA_NOW.data_monster[playerid].basic_attack;
                     -- print(ROUND.GAME_DATA_NOW.data_monster[playerid].skill[index_data], skill_action)
-                    local r,err = pcall(basic_attack,playerid)
+                    local r,err = pcall(basic_attack,playerid,ROUND.GAME_DATA_NOW)
 
                     if r then 
                         -- if no error then enter cooldown 
@@ -199,8 +273,8 @@ ScriptSupportEvent:registerEvent("MONSTER_ACTION",function(e)
                     -- Skill Can be Used 
                     -- Execute the Skill
                     local skill_action = ROUND.GAME_DATA_NOW.data_monster[playerid].skill[index_data].action;
-                    print(ROUND.GAME_DATA_NOW.data_monster[playerid].skill[index_data], skill_action)
-                    local r,err = pcall(skill_action,playerid)
+                    -- print(ROUND.GAME_DATA_NOW.data_monster[playerid].skill[index_data], skill_action)
+                    local r,err = pcall(skill_action,playerid,ROUND.GAME_DATA_NOW);
 
                     if r then 
                         -- if no error then enter cooldown 

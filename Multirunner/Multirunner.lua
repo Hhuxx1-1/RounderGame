@@ -64,7 +64,7 @@ function RUNNER:EXECUTE_DELAYED_EVENT(eventID)
             if event.delay > 0 then
                 event.delay = event.delay - 1
             else
-                local success, result = pcall(event.func, table.unpack(event.args))
+                local success, result = pcall(event.func, unpack(event.args))
                 if not success then
                     print("Error executing event [" .. eventID .. "]: " .. result)
                 end

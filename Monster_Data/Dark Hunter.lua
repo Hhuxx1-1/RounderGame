@@ -6,8 +6,10 @@ MONSTER_DATA:NEW({
     health = 1000,
     damage = 50,
     speed = 120,
-    attack_speed = 2, -- seconds
-    attack_range = 2.5, -- blocks
+    rarity = 1,
+    damage_grow = 2,
+    speed_grow = 2,
+    maximum_damage_range = 2,
     skill = {
         {
             key = "skill_1",
@@ -32,7 +34,7 @@ MONSTER_DATA:NEW({
             name = "Smash",
             description = "Slam the Ground Causing Damage to Area",
             cooldown = 8, -- seconds
-            action = function(playerid, ...)
+            action = function(playerid, data)
                 print("Slaming Ground");
             end 
         }
@@ -41,13 +43,16 @@ MONSTER_DATA:NEW({
         key = "passive_skill",
         name = "Restless",
         description = "Stamina Consumption and Stun Duration Reduced.",
-        action = function(playerid, ...)
+        action = function(playerid, data)
             print("Restless effect applied to player:", playerid)
         end,
     },
     basic_attack_cd = 2,
-    basic_attack = function()
+    basic_attack = function(playerid,data)
         print("Basic Attack Executed");
+    end,
+    execute_attack = function(playerid,data)
+        
     end,
     price = 0,
     picture_icon = [[mob_5]],

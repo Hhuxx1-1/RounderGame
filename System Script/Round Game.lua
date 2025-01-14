@@ -289,6 +289,7 @@ function ROUND:GAME_ADD(map,monster,survivor)
 
     -- load Monster Data 
     local monsterData = {};
+    local monsterModel = {};
     for _,_monster in ipairs(monster) do 
 
         -- add into monsterData table MONSTER_DATA by Fetch 
@@ -309,8 +310,52 @@ function ROUND:GAME_ADD(map,monster,survivor)
                 monsterData[_monster].CD[skill.key] = "locked"; --skill not unlocked;
             end 
         end 
+        -- init basic Attack CD 
         monsterData[_monster].CD["basic_attack"] = 0;
 
+        -- data to handle debuff itself to use by survivor 
+        monsterData[_monster].debuff = {
+            stunned = 0,
+            slowed = 0,
+            blind = 0
+        }
+
+        -- data to handel currentModel Stat 
+        monsterData[_monster].currentModel = monsterData[_monster].model.normal; 
+    end 
+
+    -- Add Survivor Data 
+    local survivorData = {};
+
+    for _,_survivor in ipairs(survivor) do
+        survivorData[_survivor] = {
+            HP = 200,
+            SP = 100,
+            level = 1,
+            index = SAVE_DATA:GET(_survivor,"Equipped_Survivor").variableValue,
+            backpack = {
+                {
+                    name  = "empty",
+                    icon  = "Empty_Ico.png",
+                },
+                {
+                    name = "empty",
+                    icon  = "Empty_Ico.png",
+                },
+                {
+                    name = "empty",
+                    icon  = "Empty_Ico.png",
+                }
+            },
+            status_debuff = {
+                stunned = 0,
+                slowed = 0,
+                blind = 0
+            },
+            point = 0 
+        }
+
+        -- load Classes and etc TODO --- LATER 
     end 
 
     self.GAME_DATA_NOW = {
@@ -320,7 +365,9 @@ function ROUND:GAME_ADD(map,monster,survivor)
         died = {}       ,
         time = 120      ,
         obje = "Not Yet Available",
-        data_monster = monsterData
+        data_monster  = monsterData,
+        mode_monster  = monsterModel,
+        data_survivor = survivorData,
     }
 
     print("Game New : ",self.GAME_DATA_NOW)
@@ -473,7 +520,7 @@ function ROUND:Update(second, tick, players)
 
             if survivorCount < 1 then 
                 self.STATE = "Finishing"
-                Chat:sendSystemMsg("All Survivor is Disconnected, Match Terminated");
+                Chat:sendSystemMsg("All Survivor is Eleminated");
             end 
 
             -- Count Monster Alive Here 
@@ -487,7 +534,7 @@ function ROUND:Update(second, tick, players)
 
             if monsterCount < 1 then
                 self.STATE = "Finishing"
-                Chat:sendSystemMsg("All Monster is Disconnected, Match Terminated");
+                Chat:sendSystemMsg("Monster is Disconnected, Match Terminated");
             end 
 
             -- check if number of Survivor Dead more than Survivor itself;
@@ -693,10 +740,7 @@ function ROUND:adjustModel()
             print(" Size Player Failed to Change")
         end 
 
-        -- Load Survivor Skin 
-        local monsterSkin = SAVE_DATA:GET(monster,"Equipped_Monster")
-
-        Actor:changeCustomModel(monster, [[mob_]]..tonumber(monsterSkin.variableValue+2));
+        Actor:changeCustomModel(monster, ROUND.GAME_DATA_NOW.data_monster[monster].model.normal);
         Player:changeViewMode(monster, 1 , true);
     end 
 
