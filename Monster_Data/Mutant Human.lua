@@ -58,7 +58,7 @@ MONSTER_DATA:NEW({
             -- play basic Attack Animation and Use model normal 
             f_H:LoadAnim(playerid,data.data_monster[playerid].model.normal);
             f_H:PlayAnim(playerid,"Attack"); 
-        end,{},2)
+        end,{},1)
 
         -- use multirunner to create delay of 0.2 seconds 
         RUNNER:NEW(function()
@@ -95,7 +95,7 @@ MONSTER_DATA:NEW({
                 f_H:SET_ACTOR(playerid,"MOVE",true);
             end,{},10)
 
-        end,{},11) -- each thick is 0.05 seconds 
+        end,{},12) -- each thick is 0.05 seconds 
 
     end,
     execute_attack = function(playerid,targetid,data)
