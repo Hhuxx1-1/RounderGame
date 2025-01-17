@@ -11,6 +11,7 @@ UIS = {
     ,   Survivor_UI             = "7455201304258484466"
     ,   Intro_UI                = "7456895252244928754"
     ,   GameOver_UI             = "7457398416253589746"
+    ,   Stamina_UI              = "7455215546370038002"
 }
 
 -- Utility function to generate UI element IDs
@@ -203,7 +204,8 @@ local function UI_STATE(state,players) -- function to control lobby and intermis
             Player:hideUIView(playerid,UIS.Survivor_UI);
             Player:hideUIView(playerid,UIS.Intro_UI);
             Player:hideUIView(playerid,UIS.Loading_UI);
-            Player:hideUIView(playerid,UIS.Timer_UI)
+            Player:hideUIView(playerid,UIS.Timer_UI);
+            Player:hideUIView(playerid,UIS.Stamina_UI); 
 
             Player:openUIView(playerid,UIS.Lobby_UI);
             Player:openUIView(playerid,UIS.Notify_UI);
@@ -219,7 +221,8 @@ local function UI_STATE(state,players) -- function to control lobby and intermis
             Player:hideUIView(playerid,UIS.Monster_UI);
             Player:hideUIView(playerid,UIS.Survivor_UI);
             Player:hideUIView(playerid,UIS.Loading_UI);
-            Player:hideUIView(playerid,UIS.Timer_UI)
+            Player:hideUIView(playerid,UIS.Timer_UI);
+            Player:hideUIView(playerid,UIS.Stamina_UI); 
 
             Player:openUIView(playerid,UIS.Intro_UI);
 
@@ -232,7 +235,8 @@ local function UI_STATE(state,players) -- function to control lobby and intermis
             Player:hideUIView(playerid,UIS.Notify_UI);
             Player:hideUIView(playerid,UIS.Intro_UI);
             Player:hideUIView(playerid,UIS.Loading_UI);
-            Player:openUIView(playerid,UIS.Timer_UI) 
+            Player:openUIView(playerid,UIS.Timer_UI);
+            Player:openUIView(playerid,UIS.Stamina_UI); 
         end
 
         -- Monster UI 
@@ -333,8 +337,12 @@ function ROUND:GAME_ADD(map,monster,survivor)
             blind = 0
         }
 
+        -- add Bonus Speed for Skill that Add Bonus Speed 
+        monsterData[_monster].bonus_speed = 0;
+
         -- data to handel currentModel Stat 
         monsterData[_monster].currentModel = monsterData[_monster].model.normal; 
+        monsterData[_monster].sp = monsterData[_monster].stamina;
     end 
 
     -- Add Survivor Data 
@@ -342,11 +350,14 @@ function ROUND:GAME_ADD(map,monster,survivor)
 
     for _,_survivor in ipairs(survivor) do
         survivorData[_survivor] = {
-            HP = 200,
-            SP = 100,
-            level = 1,
-            index = SAVE_DATA:GET(_survivor,"Equipped_Survivor").variableValue,
-            backpack = {
+            HP          = 200,
+            stamina     = 60,
+            sp          = 60,
+            speed       = 70,
+            bonus_speed = 0,
+            level       = 1,
+            index       = SAVE_DATA:GET(_survivor,"Equipped_Survivor").variableValue,
+            backpack    = {
                 {
                     name  = "empty",
                     icon  = "Empty_Ico.png",
@@ -360,12 +371,12 @@ function ROUND:GAME_ADD(map,monster,survivor)
                     icon  = "Empty_Ico.png",
                 }
             },
-            status_debuff = {
+            debuff = {
                 stunned = 0,
                 slowed = 0,
                 blind = 0
             },
-            point = 0 
+            point = 0
         }
 
         -- load Classes and etc TODO --- LATER 
@@ -383,7 +394,7 @@ function ROUND:GAME_ADD(map,monster,survivor)
         data_survivor = survivorData,
     }
 
-    print("Game New : ",self.GAME_DATA_NOW)
+    -- print("Game New : ",self.GAME_DATA_NOW)
 end
 
 function ROUND:GAME_CLEAR()
@@ -420,10 +431,13 @@ function ROUND:START_TRANSITION(players)
     -- Function to set up players (common logic for monsters and survivors)
     local function setupPlayers(playerList, position)
         for i, player in ipairs(playerList) do
-            Player:setPosition(player, position.x , position.y, position.z);
-            Actor:changeCustomModel(player, [[mob_2]])
+            Player:setPosition(player, position.x , position.y, position.z-(3+i));
+            -- Actor:changeCustomModel(player, [[mob_2]])
             if Player:SetCameraMountPos(player, position) == 0 then
-                Player:SetCameraRotTransformTo(player, {x = 0, y = -30}, 1, 1);
+                Player:SetCameraRotTransformTo(player, {x = 360, y = -30}, 1, 1);
+                RUNNER:NEW(function()
+                    Player:SetCameraRotTransformTo(player, {x = 360, y = -35}, 1, 5);
+                end,{},23)
             end
         end
     end
@@ -491,18 +505,10 @@ function ROUND:Update(second, tick, players)
                 self:SELECT(1) -- Default to selecting 1 monster
                 self:START_TRANSITION(players);
                 self:GAME_ADD(MAP_VOTING:fetch(MAP_VOTING.SELECTED_MAP),self.MONSTER,self.SURVIVOR);
-            else 
-                if tlen(self.SURVIVOR) > 0 and tlen(self.MONSTER) > 0 then
-                    -- there is player and Match Can Start 
-                    if math.fmod(tick,20) == 0 then  
-                        for _, playerid in ipairs(self.PLAYER_READY) do
-                            if Player:SetCameraMountObj(playerid, Doll) == 0 then
-                                Player:SetCameraRotTransformTo(playerid, {x = 0, y = -35}, 1, 1);
-                                Actor:setFaceYaw(Doll,0);
-                            end 
-                        end
-                    end 
-                end 
+            -- else 
+            --     if tlen(self.SURVIVOR) > 0 and tlen(self.MONSTER) > 0 then
+                   
+            --     end 
             end
         end
     elseif self.STATE == "Playing" then
@@ -685,7 +691,8 @@ function ROUND:teleportPlayerToPlayArena(players)
         local r,hp = Player:getAttr(playerid,2);
 
         if r ~= 0 then 
-            self:CLEAR();
+            Chat:sendSystemMsg("#Y[System] :#WFailed To Start Game (Some Player Leave The Game Or Disconnected)");
+           self.STATE = "Finishing"
         end 
 
         local state , blockID_State = ROUND:CheckPlayerZoneState(playerid);
@@ -740,9 +747,8 @@ end
 function ROUND:adjustModel()
     for _,playerid in ipairs(self.SURVIVOR) do
         -- Load Survivor Skin 
-        local survivorSkin = SAVE_DATA:GET(playerid,"Equipped_Survivor")
-        Actor:changeCustomModel(playerid, [[skin_]]..tonumber(survivorSkin.variableValue));
-
+        -- local survivorSkin = SAVE_DATA:GET(playerid,"Equipped_Survivor")
+        -- Actor:changeCustomModel(playerid, [[skin_]]..tonumber(survivorSkin.variableValue));
         if Player:setAttr(playerid, 21, 0.67) ~= 0 then 
             print(" Size Player Failed to Change")
         end 
@@ -755,7 +761,7 @@ function ROUND:adjustModel()
             print(" Size Player Failed to Change")
         end 
 
-        Actor:changeCustomModel(monster, ROUND.GAME_DATA_NOW.data_monster[monster].model.normal);
+        Actor:changeCustomModel(monster, ROUND.GAME_DATA_NOW.data_monster[monster].currentModel);
         Player:changeViewMode(monster, 1 , true);
     end 
 

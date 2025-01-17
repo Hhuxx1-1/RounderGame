@@ -280,3 +280,7 @@ f_H = {} -- function Helper for Global Shortcut and Logic API
             end 
         end 
     end
+
+    function f_H:SendMessage(playerid,msg)
+        if Player:notifyGameInfo2Self(playerid,tostring(msg)) then return true else return false end;
+    end

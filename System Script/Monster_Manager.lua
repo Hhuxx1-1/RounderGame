@@ -1,4 +1,4 @@
-MONSTER_DATA = {}
+MONSTER_DATA = {DATA={}}
 
 function MONSTER_DATA:NEW(monster)
     -- Validate required fields
@@ -7,7 +7,7 @@ function MONSTER_DATA:NEW(monster)
     assert(monster.health and monster.damage and monster.speed, "Monster must have health, damage, and speed!")
 
     -- Register monster
-    self[monster.key] = monster
+    self.DATA[monster.key] = monster
 
     -- Automatically register skills
     if monster.skill then
@@ -27,7 +27,7 @@ function MONSTER_DATA:FETCH(id)
     -- key is prefixed with "monsetr_"
     local key = "monster_" .. id
     -- fetch from MONSTER_DATA[]
-    return self[key]
+    return self.DATA[key]
 end
 
 SKILL_DATA = {}

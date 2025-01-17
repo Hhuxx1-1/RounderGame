@@ -22,7 +22,115 @@ function ACTION:NEW(playerid,channeling_duration,func,animation_id,force)
 
 end 
 
-local switch = false;
+local running = {};
+-- function to register player to do Run 
+local function doRunning(playerid) 
+    if not running[playerid] then 
+        running[playerid] = true;
+    end 
+end
+-- function to say that Player is Stop Running 
+local function stopRunning(playerid)
+    running[playerid] = false;
+end 
+
+-- Record Running Position here 
+local LastPositionOfRunning = {};
+local function UpdatePosition(entityId, position)
+    LastPositionOfRunning[entityId] = position -- Store position as {x, y, z}
+end
+
+function IsSamePosition(entityId, newPosition)
+    local lastPosition = LastPositionOfRunning[entityId]
+    if not lastPosition then
+        return false;
+    end
+
+    -- Calculate the distance between the two positions
+    local dx = newPosition.x - lastPosition.x
+    local dy = newPosition.y - lastPosition.y
+    local dz = newPosition.z - lastPosition.z
+    local distance = math.sqrt(dx * dx + dy * dy + dz * dz)
+
+    -- Return true if the distance is less than 0.3
+    -- if entityId == 1029380338 then 
+    --     Chat:sendSystemMsg("distance : "..distance,1029380338);
+    -- end 
+    return distance == 0;
+end
+
+
+-- local switch = false;
+-- Handle Run, Walk, Slowed Debuff Here 
+local function updateSpeed(playerid,data) 
+    local speed         = data.speed    -- This is original speed : number 
+    local staminaNow    = data.sp       -- This is Stamina Now 
+    local staminaMax    = data.spmax    -- This is Stamina Max
+    local isRunning     = data.isRun    -- Bool to Determina if The Player is in Running Condition Or Not 
+    local bonusSpeed    = data.bonusSpeed or 0; -- Bonus Speed 
+    local slowed        = data.slowed
+
+    local calculatedSpeed = (speed + bonusSpeed)/10;
+
+    if isRunning then 
+        staminaNow = math.max(staminaNow - 1,0);
+        if  staminaNow == 0 then 
+            isRunning = false; 
+            slowed = math.min(slowed + 5,15);
+        else 
+            -- checkPosition 
+            local r,x,y,z = Actor:getPosition(playerid);
+            -- simplify the x,y,z 
+            -- x,y,z = math.floor(x),math.floor(y),math.floor(z);
+            -- check if Position of Actor are Same 
+            if IsSamePosition(playerid, {x=x,y=y,z=z}) then
+               -- stop running;
+               isRunning = false; 
+            end
+            UpdatePosition(playerid,{x=x,y=y,z=z}) ;
+
+            calculatedSpeed = calculatedSpeed * 2
+        end 
+    else 
+        staminaNow = math.min(staminaNow + 0.5,staminaMax);
+    end 
+
+    if slowed > 0 then 
+        calculatedSpeed = calculatedSpeed - slowed;
+        slowed = math.max(slowed-0.1,0);
+    end 
+
+    Player:setAttr(playerid,10,calculatedSpeed);
+
+    -- update UI 
+    local UI = "7455215546370038002"
+    local staminaBar = "7455215546370038002_2"
+    local staminaBtn = "7455215546370038002_4"
+
+    if isRunning == true then
+        -- hide Stamina btn 
+        Customui:hideElement(playerid,UI,staminaBtn);
+    else
+        -- show Stamina btn     
+        Customui:showElement(playerid,UI,staminaBtn);
+    end 
+
+    -- update Stamina Bar 
+    local maxLength = 500;
+    local height    =  25;
+    local length = staminaNow/staminaMax * maxLength;
+    Customui:setSize(playerid,UI,staminaBar,length,height);
+
+    if staminaNow >= staminaMax then 
+        -- hide stamina  Bar 
+        Customui:hideElement(playerid,UI,staminaBar);
+    else 
+        -- show stamina  Bar 
+        Customui:showElement(playerid,UI,staminaBar);
+    end 
+
+    return staminaNow,isRunning,slowed;
+end
 
 local function UpdateMonster(MONSTER_DATA,tick)
 
@@ -147,6 +255,29 @@ local function UpdateMonster(MONSTER_DATA,tick)
             -- Hide Skill Cooldown Text;
             Customui:setText(tonumber(playerid),UI,UI.."_"..key_UI.basicAttack.s,"");
         end 
+
+
+        -- try update Speed 
+        local rSpeed,ErrSpeed = pcall(function()
+            local staminaNow,isRunning,debuffSlow = updateSpeed(playerid,{
+                speed       = ROUND.GAME_DATA_NOW.data_monster[playerid].speed,
+                sp          = ROUND.GAME_DATA_NOW.data_monster[playerid].sp,
+                spmax       = ROUND.GAME_DATA_NOW.data_monster[playerid].stamina,
+                isRun       = running[playerid] or false,
+                slowed      = ROUND.GAME_DATA_NOW.data_monster[playerid].debuff.slowed or 0,
+                bonusSpeed  = ROUND.GAME_DATA_NOW.data_monster[playerid].bonus_speed or 0,
+            })
+
+            -- Update the Main Data 
+            running[playerid] = isRunning;
+            ROUND.GAME_DATA_NOW.data_monster[playerid].sp = staminaNow;
+            ROUND.GAME_DATA_NOW.data_monster[playerid].debuff.slowed = debuffSlow;
+        end);
+
+        if not rSpeed then 
+            print(ErrSpeed);
+        end 
+
     end 
 end
 
@@ -217,6 +348,27 @@ local function UpdateSurvivor(Survivor,tick)
         end)
         if not r then
             print("Error 195 : ",err);
+        end 
+
+        -- try update Speed 
+        local rSpeed,ErrSpeed = pcall(function()
+            local staminaNow,isRunning,debuffSlow = updateSpeed(survivorid,{
+                speed       = ROUND.GAME_DATA_NOW.data_survivor[survivorid].speed,
+                sp          = ROUND.GAME_DATA_NOW.data_survivor[survivorid].sp,
+                spmax       = ROUND.GAME_DATA_NOW.data_survivor[survivorid].stamina,
+                isRun       = running[survivorid] or false,
+                slowed      = ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.slowed or 0,
+                bonusSpeed  = ROUND.GAME_DATA_NOW.data_survivor[survivorid].bonus_speed or 0,
+            })
+            
+            -- Update the Main Data 
+            running[survivorid] = isRunning;
+            ROUND.GAME_DATA_NOW.data_survivor[survivorid].sp = staminaNow;
+            ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.slowed = debuffSlow;
+        end);
+
+        if not rSpeed then 
+            print(ErrSpeed);
         end 
     end
 end
@@ -299,4 +451,19 @@ ScriptSupportEvent:registerEvent("MONSTER_ACTION",function(e)
 
     if not r then print(err) end 
 
+end)
+
+ScriptSupportEvent:registerEvent("startRunning",function(e)
+    local playerid = e.eventobjid;
+    doRunning(playerid);
+end)
+
+ScriptSupportEvent:registerEvent("Player.DamageActor",function(e)
+    local playerid = e.toobjid;
+    local damage = e.hurtlv;
+
+    Player:shakeCamera(playerid, 1, math.min(math.ceil(damage^2/2),2500));
+    Player:setMobileVibrate(playerid, 1.5, 150);
+    
+    f_H:playSoundOnActor(playerid,10383, 100, 1.2);
 end)

@@ -5,11 +5,13 @@ MONSTER_DATA:NEW({
     description = "A human that has been mutated by the virus.",
     health = 1000,
     damage = 50,
-    speed = 120,
+    speed = 80,
+    stamina = 150,
     rarity = 1,
     damage_grow = 2,
     speed_grow = 2,
     maximum_damage_range = 2,
+    icon = [[1004122]],
     skill = {
         {
             key = "skill_1",
@@ -54,7 +56,7 @@ MONSTER_DATA:NEW({
     execute_attack = function(playerid,data)
         
     end,
-    price = 0,
+    price = 5000,
     picture_icon = [[mob_5]],
     model = {
         normal = [[mob_5]],

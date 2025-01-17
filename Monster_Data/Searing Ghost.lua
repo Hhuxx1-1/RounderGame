@@ -1,8 +1,8 @@
 -- Define a monster
 MONSTER_DATA:NEW({
-    key = "monster_1",
-    name = "Mutant Human",
-    description = "A human that has been mutated by the virus.",
+    key = "monster_4",
+    name = "Searing Ghost",
+    description = "Very Spooky Ghost",
     health = 1000,
     damage = 50,
     speed = 75,
@@ -11,7 +11,7 @@ MONSTER_DATA:NEW({
     damage_grow = 2,
     speed_grow = 2,
     maximum_damage_range = 3,
-    icon = [[1004121]],
+    icon = [[1004124]],
     skill = {
         {
             key = "skill_1",
@@ -176,7 +176,7 @@ MONSTER_DATA:NEW({
         -- Executed on Target 
         print("Executing Target : ",targetid,"Playerid : ",playerid);
     end,
-    price = 0,
+    price = 1500,
     model = {
         normal = [[mob_3]],
         rage = [[mob_4]],
