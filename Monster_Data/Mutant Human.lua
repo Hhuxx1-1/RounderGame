@@ -29,7 +29,7 @@ MONSTER_DATA:NEW({
 
                     f_H:playSoundOnActor(playerid,10480, 100, 0.987654);
                     -- add Bonus Speed
-                    ROUND.GAME_DATA_NOW.data_monster[playerid].bonus_speed = 50; 
+                    ROUND.GAME_DATA_NOW.data_monster[playerid].bonus_speed = 25; 
                 end,{},1);
                 RUNNER:NEW(function()
                     f_H:SET_ACTOR(playerid,"MOVE",true);
@@ -103,10 +103,14 @@ MONSTER_DATA:NEW({
         {
             key = "skill_3",
             name = "Tighten Sense",
-            description = "Increase Running Speed but Decrease When Turning or Stop Running.",
+            description = "Show a Survivor Location",
             cooldown = 16, -- seconds
             action = function(playerid, data)
-    
+
+                for i,a in ipairs(data.surv) do 
+                    print(i,a);                    
+                end 
+
             end,
             icon = [[8_1029380338_1736871798]]
         },
@@ -177,6 +181,7 @@ MONSTER_DATA:NEW({
         print("Executing Target : ",targetid,"Playerid : ",playerid);
     end,
     price = 0,
+    type_currency = "FirePoint",
     model = {
         normal = [[mob_3]],
         rage = [[mob_4]],

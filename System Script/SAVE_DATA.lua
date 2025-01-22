@@ -7,7 +7,8 @@ SAVE_DATA = {
     ,   meta_surv_dat   = {}                -- Save Data index of survivor data
     ,   meta_mons_dat   = {}                -- Save Data index of monster data
     ,   vartype         = 18                -- StringGroup
-    ,   libname         = "SAVE_DATA_EXT";  -- Name of the Variable;
+    ,   libname         = "SAVE_DATA_EXT"  -- Name of the Variable;
+    ,   KEY             = "K123"
 };
 
 function SAVE_DATA:LOAD_ALL(playerid)
@@ -26,7 +27,7 @@ function SAVE_DATA:LOAD_ALL(playerid)
             table.insert(self.data[playerid], {
                 metaKey = metaKey,
                 variableName = variableName,
-                typeOfVariable = tonumber(typeOfVariable),
+                typeOfVariable = typeOfVariable,
                 variableValue = variableValue,
             })
         end
@@ -66,10 +67,11 @@ function SAVE_DATA:MODIFY(playerid, variableName, newValue)
         -- Find the specific variable
         for _, entry in ipairs(self.data[playerid]) do
             if entry.variableName == variableName then
-                local oldval = entry.variableValue
-
+                
+                local oldval = string.format("%s|%s|%s|%s", self.KEY , entry.variableName, entry.typeOfVariable, entry.variableValue)
+                local newval = string.format("%s|%s|%s|%s", self.KEY , entry.variableName, entry.typeOfVariable, newValue)
                 -- Replace the value using the API
-                local result = Valuegroup:replaceValueByName(self.vartype, self.libname, tonumber(oldval), tonumber(newValue), playerid)
+                local result = Valuegroup:replaceValueByName(self.vartype, self.libname, oldval, newval, playerid)
                 if result ~= 0 then
                     error("Failed to modify value for variableName: " .. variableName)
                 end
@@ -93,7 +95,7 @@ function SAVE_DATA:NEW(playerid, data)
     -- Step 1: Construct the data
     local _data = {}
     local _r, _err = pcall(function()
-        _data = {metaKey = data[1], variableName = data[2], typeOfVariable = data[3], variableValue = data[4]}
+        _data = { variableName = data[1], typeOfVariable = data[2], variableValue = data[3]}
     end)
     if not _r then
         print("Error When Constructing Data:", "Error At NEW:\n", _err)
@@ -104,7 +106,7 @@ function SAVE_DATA:NEW(playerid, data)
     local encodedData
     local r, err = pcall(function()
         -- Serialize the data to JSON or a simple string
-        encodedData = string.format("%s|%s|%s|%d", _data.metaKey, _data.variableName, _data.typeOfVariable, _data.variableValue)
+        encodedData = string.format("%s|%s|%s|%s", self.KEY , _data.variableName, _data.typeOfVariable, _data.variableValue)
     end)
     if not r then
         print("Error Encoding Data:", err)

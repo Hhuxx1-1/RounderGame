@@ -177,8 +177,8 @@ MONSTER_DATA:NEW({
         print("Executing Target : ",targetid,"Playerid : ",playerid);
     end,
     price = 2500,
+    type_currency = "FirePoint",
     model = {
-        normal = [[mob_3]],
-        rage = [[mob_4]],
+        normal = [[mob_6]],
     }
 })

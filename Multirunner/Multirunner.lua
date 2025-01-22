@@ -34,6 +34,11 @@ function RUNNER:REVOKE(eventID)
     end
 end
 
+-- clear RUNNER on delayed Events 
+function RUNNER:clearDelayedEvents()
+    self.DELAYED_EVENTS = {}
+end
+
 -- Register and unregister object ownership
 function RUNNER:Obj_REGISTER(objectID, playerID)
     self.OBJECT[objectID] = playerID

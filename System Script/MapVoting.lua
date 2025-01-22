@@ -4,10 +4,11 @@ local MAP_DATA = {
     {   key             =  "Map1"
     ,   Name            = "Asylum"
     ,   StateBlockId    =  501                      -- Determine State of Player special function for special alhoritm
-    ,   PositionStart   = {x=72,y=5,z=106}          --Must Contain x,y,z key and value is number where it represent Coordinate in Vector 3 
+    ,   PositionStart   = {x = 72, y = 5, z = 106}          --Must Contain x,y,z key and value is number where it represent Coordinate in Vector 3 
     ,   FacingStart     = 1                         -- 1, 2, 3, 4 is north , east , south , west    
     ,   RangeStart      = 2                         --Dimension Radius for Start
-    ,   PositionMonster = {x = 0, y = 0 , z = 0 }
+    ,   PositionMonster = {x = 83, y = 8 , z = 106 }
+    ,   TimeDuration    = 180
     ,   SkyBoxTemplate  = 7
     ,   FilterTemplate  = 9
     ,   HourTime        = 4
@@ -19,7 +20,8 @@ local MAP_DATA = {
     ,   PositionStart   = {x=183,y=5,z=113}          --Must Contain x,y,z key and value is number where it represent Coordinate in Vector 3 
     ,   FacingStart     = 2                          -- 1, 2, 3, 4 is north , east , south , west    
     ,   RangeStart      = 3                          --Dimension Radius for Start
-    ,   PositionMonster = {x = 0, y = 0 , z = 0 }
+    ,   PositionMonster = {x = 166, y = 6 , z = 113 }
+    ,   TimeDuration    = 360
     ,   SkyBoxTemplate  = 7
     ,   FilterTemplate  = 7
     ,   HourTime        = 4
@@ -31,7 +33,8 @@ local MAP_DATA = {
     ,   PositionStart   = {x=138,y=13,z=183}         --Must Contain x,y,z key and value is number where it represent Coordinate in Vector 3 
     ,   FacingStart     = 1                          -- 1, 2, 3, 4 is north , east , south , west    
     ,   RangeStart      = 3                          --Dimension Radius for Start
-    ,   PositionMonster = {x = 0, y = 0 , z = 0 }
+    ,   PositionMonster = {x = 136, y = 11 , z = 202 }
+    ,   TimeDuration    = 180
     ,   SkyBoxTemplate  = 7
     ,   FilterTemplate  = 7
     ,   HourTime        = 4

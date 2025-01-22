@@ -62,13 +62,20 @@ end
 
 -- local switch = false;
 -- Handle Run, Walk, Slowed Debuff Here 
-local function updateSpeed(playerid,data) 
+local function updateSpeed(playerid,data,tick) 
     local speed         = data.speed    -- This is original speed : number 
     local staminaNow    = data.sp       -- This is Stamina Now 
     local staminaMax    = data.spmax    -- This is Stamina Max
     local isRunning     = data.isRun    -- Bool to Determina if The Player is in Running Condition Or Not 
     local bonusSpeed    = data.bonusSpeed or 0; -- Bonus Speed 
     local slowed        = data.slowed
+    local stunned       = data.stunned 
+    local blind         = data.blind
+
+    -- update UI 
+    local UI = "7455215546370038002"
+    local staminaBar = "7455215546370038002_2"
+    local staminaBtn = "7455215546370038002_4"
 
     local calculatedSpeed = (speed + bonusSpeed)/10;
 
@@ -78,16 +85,19 @@ local function updateSpeed(playerid,data)
             isRunning = false; 
             slowed = math.min(slowed + 5,15);
         else 
-            -- checkPosition 
-            local r,x,y,z = Actor:getPosition(playerid);
-            -- simplify the x,y,z 
-            -- x,y,z = math.floor(x),math.floor(y),math.floor(z);
-            -- check if Position of Actor are Same 
-            if IsSamePosition(playerid, {x=x,y=y,z=z}) then
-               -- stop running;
-               isRunning = false; 
-            end
-            UpdatePosition(playerid,{x=x,y=y,z=z}) ;
+
+            if math.fmod(tick,10) == 0 then 
+                -- checkPosition 
+                local r,x,y,z = Actor:getPosition(playerid);
+                -- simplify the x,y,z 
+                -- x,y,z = math.floor(x),math.floor(y),math.floor(z);
+                -- check if Position of Actor are Same 
+                if IsSamePosition(playerid, {x=x,y=y,z=z}) then
+                -- stop running;
+                isRunning = false; 
+                end
+                UpdatePosition(playerid,{x=x,y=y,z=z}) ;
+            end 
 
             calculatedSpeed = calculatedSpeed * 2
         end 
@@ -95,17 +105,28 @@ local function updateSpeed(playerid,data)
         staminaNow = math.min(staminaNow + 0.5,staminaMax);
     end 
 
-    if slowed > 0 then 
-        calculatedSpeed = calculatedSpeed - slowed;
-        slowed = math.max(slowed-0.1,0);
+    -- handle Stunned 
+    if stunned and stunned > 0 then 
+        calculatedSpeed = 0;
+        stunned = math.max(stunned-0.1,0);
+        isRunning = false; 
     end 
 
-    Player:setAttr(playerid,10,calculatedSpeed);
-
-    -- update UI 
-    local UI = "7455215546370038002"
-    local staminaBar = "7455215546370038002_2"
-    local staminaBtn = "7455215546370038002_4"
+    -- handle blinded 
+    if blind and blind > 0 then 
+        blind = math.max(blind-0.1,0);
+        World:SetSkyBoxFilter(playerid, SKYBOXFILTER.GAMMA, math.max(50-(blind*5),0));
+    end 
+    
+    -- handle Slowed 
+    if slowed > 0 then 
+        calculatedSpeed = math.max(calculatedSpeed - slowed,0);
+        slowed = math.max(slowed-0.1,0);
+        Customui:setColor(playerid,UI,staminaBar,0xff0000);
+        isRunning = false; 
+    else
+        Customui:setColor(playerid,UI,staminaBar,0xffffff);
+    end 
 
     if isRunning == true then
         -- hide Stamina btn 
@@ -129,7 +150,9 @@ local function updateSpeed(playerid,data)
         Customui:showElement(playerid,UI,staminaBar);
     end 
 
-    return staminaNow,isRunning,slowed;
+    Player:setAttr(playerid,10,calculatedSpeed);
+
+    return staminaNow,isRunning,slowed,stunned,blind;
 end
 
 local function UpdateMonster(MONSTER_DATA,tick)
@@ -259,19 +282,23 @@ local function UpdateMonster(MONSTER_DATA,tick)
 
         -- try update Speed 
         local rSpeed,ErrSpeed = pcall(function()
-            local staminaNow,isRunning,debuffSlow = updateSpeed(playerid,{
+            local staminaNow,isRunning,debuffSlow,stunned,blind = updateSpeed(playerid,{
                 speed       = ROUND.GAME_DATA_NOW.data_monster[playerid].speed,
                 sp          = ROUND.GAME_DATA_NOW.data_monster[playerid].sp,
                 spmax       = ROUND.GAME_DATA_NOW.data_monster[playerid].stamina,
                 isRun       = running[playerid] or false,
                 slowed      = ROUND.GAME_DATA_NOW.data_monster[playerid].debuff.slowed or 0,
+                stunned     = ROUND.GAME_DATA_NOW.data_monster[playerid].debuff.stunned or 0,
+                blind       = ROUND.GAME_DATA_NOW.data_monster[playerid].debuff.blind or 0,
                 bonusSpeed  = ROUND.GAME_DATA_NOW.data_monster[playerid].bonus_speed or 0,
-            })
+            },tick)
 
             -- Update the Main Data 
             running[playerid] = isRunning;
             ROUND.GAME_DATA_NOW.data_monster[playerid].sp = staminaNow;
             ROUND.GAME_DATA_NOW.data_monster[playerid].debuff.slowed = debuffSlow;
+            ROUND.GAME_DATA_NOW.data_monster[playerid].debuff.stunned = stunned;
+            ROUND.GAME_DATA_NOW.data_monster[playerid].debuff.blind = blind;
         end);
 
         if not rSpeed then 
@@ -352,19 +379,23 @@ local function UpdateSurvivor(Survivor,tick)
 
         -- try update Speed 
         local rSpeed,ErrSpeed = pcall(function()
-            local staminaNow,isRunning,debuffSlow = updateSpeed(survivorid,{
+            local staminaNow,isRunning,debuffSlow,stunned,blind = updateSpeed(survivorid,{
                 speed       = ROUND.GAME_DATA_NOW.data_survivor[survivorid].speed,
                 sp          = ROUND.GAME_DATA_NOW.data_survivor[survivorid].sp,
                 spmax       = ROUND.GAME_DATA_NOW.data_survivor[survivorid].stamina,
                 isRun       = running[survivorid] or false,
                 slowed      = ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.slowed or 0,
+                stunned     = ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.stunned or 0,
+                blind       = ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.blind or 0,
                 bonusSpeed  = ROUND.GAME_DATA_NOW.data_survivor[survivorid].bonus_speed or 0,
-            })
+            },tick)
             
             -- Update the Main Data 
             running[survivorid] = isRunning;
             ROUND.GAME_DATA_NOW.data_survivor[survivorid].sp = staminaNow;
             ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.slowed = debuffSlow;
+            ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.stunned = stunned;
+            ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.blind = blind;
         end);
 
         if not rSpeed then 
