@@ -136,7 +136,7 @@ function ROUND:SELECT(numMonsters)
     self.SURVIVOR = {}
 
     if numMonsters > tlen(self.PLAYER_READY) then
-        print("Not enough players to select as monsters!")
+      --print("Not enough players to select as monsters!")
         self:CLEAR()
         return
     end
@@ -153,8 +153,8 @@ function ROUND:SELECT(numMonsters)
     -- Assign remaining players as survivors
     self.SURVIVOR = readyPlayers
 
-    print("Monsters: ", table.concat(self.MONSTER, ", "))
-    print("Survivors: ", table.concat(self.SURVIVOR, ", "))
+  --print("Monsters: ", table.concat(self.MONSTER, ", "))
+  --print("Survivors: ", table.concat(self.SURVIVOR, ", "))
 end
 
 -- Function to check a player's zone state
@@ -669,7 +669,7 @@ ScriptSupportEvent:registerEvent("Player.Ready",function(e)
     local playerid = e.eventobjid;
 
     if Player:setAttr(playerid, 21, 0.67) ~= 0 then 
-        print(" Size Player Failed to Change")
+      --print(" Size Player Failed to Change")
     end 
 
     local r,err = pcall(function()
@@ -678,7 +678,7 @@ ScriptSupportEvent:registerEvent("Player.Ready",function(e)
     end )
 
     if not r then 
-        print("Error Something(2) : ",err);
+      --print("Error Something(2) : ",err);
     end 
 
     -- if ROUND then --Check Todo When Join in middle of playing session ;
@@ -696,7 +696,8 @@ ScriptSupportEvent:registerEvent("Player.Ready",function(e)
         Equipped_Monster  = SAVE_DATA:GET(playerid,"Equipped_Monster");
 
         if Equipped_Survivor == nil and Equipped_Monster == nil then --first time join 
-            for _,name in pairs(GLOBAL_CURRENCY.MONEY) do 
+            local init_Money = {"Coin","FirePoint","Crystal","Rank"}
+            for _,name in ipairs(init_Money) do 
                 -- init their currency 
                 GLOBAL_CURRENCY:AddCurrency(playerid,name,0);
             end 
@@ -711,57 +712,66 @@ ScriptSupportEvent:registerEvent("Player.Ready",function(e)
             SAVE_DATA:NEW(playerid,{"Equipped_Survivor","String",1})
             SAVE_DATA:LOAD_ALL(playerid);
         else
-            print("Equipped_Survivor",Equipped_Survivor);
+          --print("Equipped_Survivor",Equipped_Survivor);
         end 
 
         if Equipped_Monster == nil then -- Assign default
             SAVE_DATA:NEW(playerid,{"Equipped_Monster","String",1})
             SAVE_DATA:LOAD_ALL(playerid);
         else
-            print("Equipped_Monster",Equipped_Monster)
+          --print("Equipped_Monster",Equipped_Monster)
         end 
 
     end)
 
     if not r then 
-        print("Error Something(1) : ",err);
+      --print("Error Something(1) : ",err);
     end 
 end)
 
 function ROUND:teleportPlayerToPlayArena(players,_type)
     local check = 0;
 
-    for _,playerid in ipairs(players) do 
-        local r,hp = Player:getAttr(playerid,2);
-
-        if r ~= 0 then 
-            Chat:sendSystemMsg("#Y[System] :#WFailed To Start Game (Some Player Leave The Game Or Disconnected)");
-           self.STATE = "Finishing"
-        end 
-
-        local state , blockID_State = ROUND:CheckPlayerZoneState(playerid);
-        if blockID_State ~= ROUND.GAME_DATA_NOW.map.StateBlockId then 
-            
-            local position = {}
-            if _type == "Monster" then 
-                position = ROUND.GAME_DATA_NOW.map.PositionMonster;
-            else 
-                position = ROUND.GAME_DATA_NOW.map.PositionStart;
+    if self.GAME_DATA_NOW.countdown > 0 then 
+        -- set Everyone to default model
+            for _,playerid in ipairs(self.PLAYER_READY) do
+                Actor:changeCustomModel(playerid, default);
             end 
+        self.GAME_DATA_NOW.countdown = self.GAME_DATA_NOW.countdown - 1;
+    else
+        
+        for _,playerid in ipairs(players) do 
+            local r,hp = Player:getAttr(playerid,2);
 
-            local function set2FarPosition(playerid,x,y,z)
-                if Actor:killSelf(playerid) == 0 then 
-                    Player:reviveToPos(playerid,x,y,z);
-                    Player:ResetCameraAttr(playerid);
-                    Player:setPosition(playerid,x,y,z);
+            if r ~= 0 then 
+                Chat:sendSystemMsg("#Y[System] :#WFailed To Start Game (Some Player Leave The Game Or Disconnected)");
+            self.STATE = "Finishing"
+            end  
+            local state , blockID_State = ROUND:CheckPlayerZoneState(playerid);
+            if blockID_State ~= ROUND.GAME_DATA_NOW.map.StateBlockId then 
+                
+                local position = {}
+                if _type == "Monster" then 
+                    position = ROUND.GAME_DATA_NOW.map.PositionMonster;
+                else 
+                    position = ROUND.GAME_DATA_NOW.map.PositionStart;
                 end 
-            end
-            -- Chat:sendSystemMsg("Teleporting : "..playerid.." now State Block is : "..blockID_State);
-            local rangePos = ROUND.GAME_DATA_NOW.map.RangeStart;
-            set2FarPosition(playerid,position.x+math.random(-rangePos,rangePos),position.y,position.z+math.random(-rangePos,rangePos));
-            break;
-        else 
-            check = check + 1;
+
+                local function set2FarPosition(playerid,x,y,z)
+                    if Actor:killSelf(playerid) == 0 then 
+                        Player:reviveToPos(playerid,x,y,z);
+                        Player:ResetCameraAttr(playerid);
+                        Player:setPosition(playerid,x,y,z);
+                    end 
+                end
+                -- Chat:sendSystemMsg("Teleporting : "..playerid.." now State Block is : "..blockID_State);
+                local rangePos = ROUND.GAME_DATA_NOW.map.RangeStart;
+                set2FarPosition(playerid,position.x+math.random(-rangePos,rangePos),position.y,position.z+math.random(-rangePos,rangePos));
+                self.GAME_DATA_NOW.countdown = 5;
+                break;
+            else 
+                check = check + 1;
+            end 
         end 
     end 
 
@@ -776,6 +786,8 @@ function ROUND:teleportPlayerToPlayArena(players,_type)
     end 
 
     textLoading = textLoading.."\n ".."Teleporting Players";
+    
+    for i = 0 , self.GAME_DATA_NOW.countdown do textLoading = textLoading .. " ." end;
 
     -- load the SkyBox and Filter at this Momment... 
     local skyBoxTemplate = self.GAME_DATA_NOW.map.SkyBoxTemplate;
@@ -790,7 +802,6 @@ function ROUND:teleportPlayerToPlayArena(players,_type)
         World:SetSkyBoxFilter(playerid, 10, FilterTemplate);
         World:setHours(hourTime);    
     end 
-
     return check;
 end
 
@@ -822,7 +833,7 @@ function ROUND:adjustModel()
                 RUNNER:NEW(function() 
 
                     if Player:setAttr(playerid, 21, 0.67) ~= 0 then 
-                        print(" Size Player Failed to Change")
+                      --print(" Size Player Failed to Change")
                     else
                         Player:changeViewMode(playerid, 0 , true); 
                     end 
@@ -850,7 +861,7 @@ function ROUND:adjustModel()
                 Actor:changeCustomModel(monster, currentModel );
                 RUNNER:NEW(function() 
                     if Player:setAttr(monster, 21, 0.80) ~= 0 then 
-                        print(" Size Player Failed to Change")
+                      --print(" Size Player Failed to Change")
                     else
                         Player:changeViewMode(monster, 1 , true);
                     end 
@@ -873,7 +884,7 @@ function ROUND:adjustModel()
 end
 
 function ROUND:GiveReward(Data) 
-    print("Game Result Data : ",Data)
+  --print("Game Result Data : ",Data)
 
     local GameOverText          = "7457398416253589746_2";
     local textSurvivorisAlive   = "7457398416253589746_3";
@@ -922,7 +933,7 @@ function ROUND:GiveReward(Data)
     for i,survivorid_died in ipairs(survivor_died) do 
         -- append content with player Name 
         local r,name = Player:getNickname(survivorid_died);
-        deadContent = aliveContent.." \n ["..i.."] ".. name .. " ";
+        deadContent = deadContent.." \n ["..i.."] ".. name .. " ";
     end 
 
     -- use API to Edit the UI content 
@@ -934,12 +945,11 @@ function ROUND:GiveReward(Data)
 
     -- store Reward Here 
     local Reward = {};
-    -- Coin Rewards Total = 20 * Map Duration 
-    Reward.Coin         = { value = Data.map.TimeDuration * 20, text = "Coins" ,        icon = GLOBAL_CURRENCY:GetIconCurrency(GLOBAL_CURRENCY.MONEY.Coin)};
-    Reward.FirePoint    = { value = Data.map.TimeDuration * 5,  text = "Firepoint" ,    icon = GLOBAL_CURRENCY:GetIconCurrency(GLOBAL_CURRENCY.MONEY.FirePoint)};
-    Reward.Rank         = { value = 10,                         text = "Rank Point" ,   icon = GLOBAL_CURRENCY:GetIconCurrency("Rank")};
 
     local function GiveReward(playerid,percentage)
+        Reward.Coin         = { value = Data.map.TimeDuration * 15, text = "Coins" ,        icon = GLOBAL_CURRENCY:GetIconCurrency(GLOBAL_CURRENCY.MONEY.Coin)};
+        Reward.FirePoint    = { value = Data.map.TimeDuration * math.random(2,3)*2,  text = "Firepoint" ,    icon = GLOBAL_CURRENCY:GetIconCurrency(GLOBAL_CURRENCY.MONEY.FirePoint)};
+        Reward.Rank         = { value = 10,                         text = "Rank Point" ,   icon = GLOBAL_CURRENCY:GetIconCurrency("Rank")};
         -- this win 
         local c = 1;
         for name,reward in pairs(Reward) do 
@@ -954,34 +964,46 @@ function ROUND:GiveReward(Data)
                 Customui:setText(playerid,UIS.GameOver_UI,slot.txt,reward.text.." + "..reward.value);
                 -- set the icon 
                 Customui:setTexture(playerid,UIS.GameOver_UI,slot.icon,reward.icon);
+                -- add to return value
+                
             end 
         end 
+
+        return Reward.Rank.value; 
     end
 
     -- Update for Survival Alive
     for i,playerid in ipairs(survivor_alive) do 
+        Data.reward = GiveReward(playerid,100);
+        Data.status = "Win";
+        GLOBAL_MATCH:AddHistory(playerid,Data)
         -- Set Customui Player Alive
         Customui:setText(playerid,UIS.GameOver_UI,GameOverText,"You Survived");
         updateList(playerid);
-        GiveReward(playerid,100);
     end 
 
     -- Update For Survivor Dead 
     for i,playerid in ipairs(survivor_died) do 
+        Data.reward = GiveReward(playerid,40);
+        Data.status = "Defeat";
+        GLOBAL_MATCH:AddHistory(playerid,Data)
         -- Set Customui Player Alive
         Customui:setText(playerid,UIS.GameOver_UI,GameOverText,"You Died");
         updateList(playerid);
-        GiveReward(playerid,50);
     end 
 
     -- Update for Monster 
     for i,monster in ipairs(Data.mons) do 
         if tlen(survivor_alive) < 1 then 
+            Data.reward = GiveReward(monster,100+(#survivor_died*20));
+            Data.status = "Win";
+            GLOBAL_MATCH:AddHistory(monster,Data)
             Customui:setText(monster,UIS.GameOver_UI,GameOverText,"All Survivor Eleminated");
-            GiveReward(monster,200);
-        else 
+        else
+            Data.reward =  GiveReward(monster,20+(#survivor_died*10));
+            Data.status = "Defeat";
+            GLOBAL_MATCH:AddHistory(monster,Data)
             Customui:setText(monster,UIS.GameOver_UI,GameOverText,"Game Over");
-            GiveReward(monster,50);
         end 
         updateList(monster);
     end 
