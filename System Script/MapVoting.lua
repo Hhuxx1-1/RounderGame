@@ -76,7 +76,7 @@ function MAP_VOTING:SelectRandomMaps()
     local requiredMaps = 3
 
     if #MAP_DATA < requiredMaps then
-        print("Not enough maps in MAP_DATA to select from.");
+      --print("Not enough maps in MAP_DATA to select from.");
         return
     end
 
@@ -92,7 +92,7 @@ function MAP_VOTING:SelectRandomMaps()
         table.insert(self.AVAILABLE_MAPS, selectedMap.key)
     end
 
-    print("Available Maps for Voting: " .. table.concat(self.AVAILABLE_MAPS, ", "))
+  --print("Available Maps for Voting: " .. table.concat(self.AVAILABLE_MAPS, ", "))
 end
 
 MAP_VOTING.ShownMapVote_Data = {}
@@ -157,12 +157,12 @@ end
 -- Cast a vote for a map
 function MAP_VOTING:Vote(playerID, map)
     if not self.VOTING_ACTIVE then
-        print("Voting is not active!")
+      --print("Voting is not active!")
         return
     end
 
     if not self.VOTE_COUNTS[map] then
-        print("Invalid map selected: " .. map)
+      --print("Invalid map selected: " .. map)
         return
     end
 
@@ -175,13 +175,13 @@ function MAP_VOTING:Vote(playerID, map)
     -- Record the new vote
     self.PLAYER_VOTES[playerID] = map
     self.VOTE_COUNTS[map] = self.VOTE_COUNTS[map] + 1
-    print("Player " .. playerID .. " voted for " .. map)
+  --print("Player " .. playerID .. " voted for " .. map)
 end
 
 -- Tally votes and select a map
 function MAP_VOTING:EndVoting()
     if not self.VOTING_ACTIVE then
-        print("Voting is not active!")
+      --print("Voting is not active!")
         return
     end
 
@@ -202,9 +202,9 @@ function MAP_VOTING:EndVoting()
     -- Select a map randomly if there is a tie
     if #candidates > 0 then
         self.SELECTED_MAP = candidates[math.random(#candidates)]
-        print("Map selected: " .. self.SELECTED_MAP)
+      --print("Map selected: " .. self.SELECTED_MAP)
     else
-        print("No votes cast. Defaulting to the first map: " .. self.AVAILABLE_MAPS[1])
+      --print("No votes cast. Defaulting to the first map: " .. self.AVAILABLE_MAPS[1])
         self.SELECTED_MAP = self.AVAILABLE_MAPS[1]
     end
 
@@ -229,7 +229,7 @@ ScriptSupportEvent:registerEvent("Player.AreaIn",function(e)
     local playerid = e.eventobjid;
     local areaid = e.areaid;
     -- check 
-    print(MAP_VOTING.ShownMapVote_Data);
+  --print(MAP_VOTING.ShownMapVote_Data);
     for i,a in ipairs(MAP_VOTING.ShownMapVote_Data) do 
         if areaid == a.areaid then 
             MAP_VOTING:Vote(playerid,a.key);
