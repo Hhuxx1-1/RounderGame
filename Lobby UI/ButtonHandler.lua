@@ -15,6 +15,10 @@ local ActionUIBtn = {
     ["7455624551810668786_6"] = function(playerid)
         ROUND:setState(playerid,"7455649763268696306");
         Player:openUIView(playerid,"7455649763268696306");
+    end,
+    ["7455624551810668786_39"] = function(playerid)
+        ROUND:setState(playerid,"7462634028632054002");
+        Player:openUIView(playerid,"7462634028632054002");
     end
 }
 
