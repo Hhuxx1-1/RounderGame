@@ -9,18 +9,15 @@ local element = {
             base_btn  = 30,base_pic = 31,item_icon = 32,item_name = 33,
             btn_buy = 34,price_icon = 35,price_text=36,
             speed_ = 37, dmg_ = 39 , rarity_ = 41
-        },
-        {
+        },        {
             base_btn  = 43,base_pic = 44,item_icon = 45,item_name = 46,
             btn_buy = 47,price_icon = 48,price_text=49,
             speed_ = 50, dmg_ = 52, rarity_ = 54
-        },
-        {
+        },        {
             base_btn  = 56,base_pic = 57,item_icon = 58,item_name = 59,
             btn_buy = 60,price_icon = 61,price_text=62,
             speed_ = 63, dmg_ = 65 , rarity_ = 67
-        },
-        {
+        },        {
             base_btn  = 69,base_pic = 70,item_icon = 71,item_name = 72,
             btn_buy = 73,price_icon = 74,price_text=75,
             speed_ = 76, dmg_ = 78 , rarity_ = 80
@@ -172,7 +169,7 @@ function Shop:UpdateUI(playerid, item, category,c_index)
         -- Item is already Bought 
         -- check is it Equipped item or not 
         -- get Id of Equipped_Monster  from SAVE_DATA 
-        local id_equipped = SAVE_DATA:GET(playerid,"Equipped_"..category).variableValue;
+        local id_equipped = (SAVE_DATA:GET(playerid,"Equipped_"..category) ~= nil) and SAVE_DATA:GET(playerid,"Equipped_"..category).variableValue or 0;
         -- id_equipped is prefixed with category _ id 
         id_equipped = string.lower(category).."_"..id_equipped;
         -- print("Equipped id : "..id_equipped);
@@ -372,7 +369,12 @@ ScriptSupportEvent:registerEvent("UI.Show",function(e)
     end     
 
     -- open shop UI
-    Shop:DisplayShop(playerid, currentCategory[playerid], currentPage[playerid]);
+    local r, err = pcall(function()
+        Shop:DisplayShop(playerid, currentCategory[playerid], currentPage[playerid]);    
+    end)
+
+    if not r then print(err) end
+    
 end)
 
 ScriptSupportEvent:registerEvent("UI.Button.Click",function(e)
@@ -390,7 +392,10 @@ ScriptSupportEvent:registerEvent("UI.Button.Click",function(e)
                 if not r then 
                     print(err);
                 else
-                    Shop:DisplayShop(playerid, currentCategory[playerid], currentPage[playerid]);
+                    local er,err2 = pcall(function()
+                        Shop:DisplayShop(playerid, currentCategory[playerid], currentPage[playerid]);    
+                    end)
+                    if not er then print(err2) end 
                 end 
             else 
                 -- not a function 

@@ -1,5 +1,5 @@
 -- Constants
-local GAME_SECOND = 0
+GAME_SECOND = 0
 local UI = "7453424227180026098" -- UI element ID, kept local to avoid conflicts
 UIS = {
     -- list of UI ;
@@ -395,18 +395,29 @@ function ROUND:GAME_ADD(map,monster,survivor)
 
         -- load Classes and etc TODO --- LATER 
     end 
-
+    local function MakeCopy(original)
+        if type(original) ~= "table" then
+            return original -- Return the value itself if not a table
+        end
+    
+        local copy = {}
+        for key, value in pairs(original) do
+            copy[key] = MakeCopy(value) -- Recursively copy nested tables
+        end
+    
+        return copy
+    end
     self.GAME_DATA_NOW = {
-        map  = map      ,
-        mons = monster  ,
-        surv = survivor ,
+        map  = MakeCopy(map), -- avoid storing references, and make duplicate 
+        mons = MakeCopy(monster)  ,
+        surv = MakeCopy(survivor) ,
         died = {}       ,
         time = 120      ,
         obje = "Not Yet Available",
-        data_monster  = monsterData,
-        mode_monster  = monsterModel,
-        data_survivor = survivorData,
-        countdown = 5,
+        data_monster  = MakeCopy(monsterData),
+        mode_monster  = MakeCopy(monsterModel),
+        data_survivor = MakeCopy(survivorData),
+        countdown = 5,delay = 100,
     }
 
     -- print("Game New : ",self.GAME_DATA_NOW)
@@ -497,23 +508,42 @@ function ROUND:Update(second, tick, players)
             self.UI_STATE = "loading";
             -- forcely update the players ' UI
             UI_STATE(ROUND.UI_STATE,players);
-            -- teleport each player to play arena;
-            -- print(ROUND.GAME_DATA_NOW);
-            local checkTeleport = 0
-            checkTeleport = checkTeleport + self:teleportPlayerToPlayArena(self.MONSTER,"Monster");
-            checkTeleport = checkTeleport + self:teleportPlayerToPlayArena(self.SURVIVOR,"Survivor");
+            -- Host Load the Prop 
+            if self:LoadProp() then 
+                -- teleport each player to play arena;
+                -- print(ROUND.GAME_DATA_NOW);
+                if self.GAME_DATA_NOW.delay > 0 then 
+                    if self.GAME_DATA_NOW.delay >= 90 then 
+                        local result,uin=Player:getHostUin()
+                        local x,y,z = 70.5, 5.5 ,29.5
+                        Player:setPosition(uin or 0,x,y,z);
+                    end 
+                    self.GAME_DATA_NOW.delay = self.GAME_DATA_NOW.delay - 1;
 
-            -- check if all player ready is successfully Teleported to Arena
-            if checkTeleport >= tlen(self.PLAYER_READY) then 
-                if self:adjustModel() then 
-                    self.UI_STATE = "playing";
-                    self.STATE = "Playing";
+                else 
+                    local checkTeleport = 0
+                    checkTeleport = checkTeleport + self:teleportPlayerToPlayArena(self.MONSTER,"Monster");
+                    checkTeleport = checkTeleport + self:teleportPlayerToPlayArena(self.SURVIVOR,"Survivor");
 
-                    -- update the Time End 
-                    self.TIME_END = GAME_SECOND + tonumber(self.GAME_DATA_NOW.map.TimeDuration);
-                end;
+                    -- check if all player ready is successfully Teleported to Arena
+                    if checkTeleport >= tlen(self.PLAYER_READY) then 
+                        if self:adjustModel() then 
+                            self.UI_STATE = "playing";
+                            self.STATE = "Playing";
+
+                            -- update the Time End 
+                            self.TIME_END = GAME_SECOND + tonumber(self.GAME_DATA_NOW.map.TimeDuration);
+                        end;
+                    end 
+                end 
+                local textLoading = "Preparing";
+                for i=1,math.fmod(self.GAME_DATA_NOW.delay,3)+1 do 
+                    textLoading=textLoading..".";
+                end 
+                for _,playerid in ipairs(self.PLAYER_READY) do 
+                    Customui:setText(playerid,UIS.Loading_UI,UIS.Loading_UI.."_3",textLoading);
+                end 
             end 
-
         else
             if MAP_VOTING.VOTING_ACTIVE then
                 self.UI_STATE = "intro";
@@ -523,10 +553,7 @@ function ROUND:Update(second, tick, players)
                 RUNNER:NEW(function()
                     self:START_TRANSITION(players);
                 end,{},2)
-            -- else 
-            --     if tlen(self.SURVIVOR) > 0 and tlen(self.MONSTER) > 0 then
-                   
-            --     end 
+                self:CLOSE_ANY_OPENED_UI(players);
             end
         end
     elseif self.STATE == "Playing" then
@@ -588,8 +615,14 @@ function ROUND:Update(second, tick, players)
                 Customui:setText(playerid,UIS.Timer_UI,UIS.Timer_UI.."_3",(nalive - ndied).." Survivor left");
             end 
 
+            local r,err = pcall(function()
+                if timer >= 0 then 
+                    -- try run Objective function and store it 
+                    self.GAME_DATA_NOW.objString = self.GAME_DATA_NOW.map.Objective();
+                end 
+            end)
             -- update Action here 
-            ACTION:UPDATE(tick)
+            ACTION:UPDATE(tick);
         else
             self.STATE = "Finishing"
         end
@@ -766,7 +799,7 @@ function ROUND:teleportPlayerToPlayArena(players,_type)
                 end
                 -- Chat:sendSystemMsg("Teleporting : "..playerid.." now State Block is : "..blockID_State);
                 local rangePos = ROUND.GAME_DATA_NOW.map.RangeStart;
-                set2FarPosition(playerid,position.x+math.random(-rangePos,rangePos),position.y,position.z+math.random(-rangePos,rangePos));
+                set2FarPosition(playerid,position.x,position.y,position.z);
                 self.GAME_DATA_NOW.countdown = 5;
                 break;
             else 
@@ -947,8 +980,8 @@ function ROUND:GiveReward(Data)
     local Reward = {};
 
     local function GiveReward(playerid,percentage)
-        Reward.Coin         = { value = Data.map.TimeDuration * 15, text = "Coins" ,        icon = GLOBAL_CURRENCY:GetIconCurrency(GLOBAL_CURRENCY.MONEY.Coin)};
-        Reward.FirePoint    = { value = Data.map.TimeDuration * math.random(2,3)*2,  text = "Firepoint" ,    icon = GLOBAL_CURRENCY:GetIconCurrency(GLOBAL_CURRENCY.MONEY.FirePoint)};
+        Reward.Coin         = { value = math.min(Data.map.TimeDuration * 15,6000), text = "Coins" ,        icon = GLOBAL_CURRENCY:GetIconCurrency(GLOBAL_CURRENCY.MONEY.Coin)};
+        Reward.FirePoint    = { value = math.min(Data.map.TimeDuration * math.random(2,3)*2,3000),  text = "Firepoint" ,    icon = GLOBAL_CURRENCY:GetIconCurrency(GLOBAL_CURRENCY.MONEY.FirePoint)};
         Reward.Rank         = { value = 10,                         text = "Rank Point" ,   icon = GLOBAL_CURRENCY:GetIconCurrency("Rank")};
         -- this win 
         local c = 1;
@@ -1006,5 +1039,76 @@ function ROUND:GiveReward(Data)
             Customui:setText(monster,UIS.GameOver_UI,GameOverText,"Game Over");
         end 
         updateList(monster);
+    end 
+end 
+
+function ROUND:LoadProp()
+    local Map = self.GAME_DATA_NOW.map
+    -- Prop is Exist 
+    if Map.Prop and Map.Prop ~= {} then 
+        if self.GAME_DATA_NOW.countdown > 0 then 
+            self.GAME_DATA_NOW.countdown = self.GAME_DATA_NOW.countdown - 1;
+        else
+            local function doProp()
+                for i = #Map.Prop,1 ,-1 do 
+                    local prop = Map.Prop[i];
+                    local x,y,z = prop.x,prop.y,prop.z;
+                    if x and y and z then 
+                        -- try Spawn it 
+                        if prop.id then 
+                            -- id is exist and spawn able 
+                            local result,uin=Player:getHostUin()
+
+                            -- check the block id 
+                            local result,id=Block:getBlockID(x,y,z);
+                            -- Chat:sendSystemMsg("Prop ID = "..prop.id.." and ID : "..id);
+                            if id == prop.id then 
+                                -- remove from unloaded prop 
+                                table.remove(Map.Prop,i);
+                                -- It Should remove the Copied item and not the Original Map Data ;
+                            else 
+                                -- check player position 
+                                local r,px,py,pz = Actor:getPosition(uin or 0);
+                                -- Chat:sendSystemMsg("x = "..x.." px = "..px.."|  y = "..y.." px = "..py.."| z = "..z.." pz = "..pz);
+                                if px ~= x or py ~= y or pz ~= z then
+                                    Player:setPosition(uin or 0,x,y,z);
+                                else
+                                    Block:placeBlock(prop.id,x,y,z,prop.f,prop.f);
+                                    -- Block:setBlockAll(x,y,z,prop.id,prop.f,prop.f,prop.f); 
+                                end 
+                                self.GAME_DATA_NOW.countdown = 10;
+                                return;
+                            end 
+                        end 
+                    end 
+                end
+            end 
+
+            local r, err = pcall(doProp);
+            if not r then print(err) end;
+            -- set loading screen 
+            local textLoading = "Loading Prop \n ("..#Map.Prop.." Left )\n"
+            for i=1,self.GAME_DATA_NOW.countdown do 
+                textLoading=textLoading.."."
+            end 
+            for _,playerid in ipairs(self.PLAYER_READY) do 
+                Customui:setText(playerid,UIS.Loading_UI,UIS.Loading_UI.."_3",textLoading);
+            end 
+            if #Map.Prop == 0 then 
+                return true;
+            else 
+                return false;
+            end
+        end 
+    else 
+        return true;
+    end 
+end 
+
+function ROUND:CLOSE_ANY_OPENED_UI(players)
+    for i,playerid in ipairs(players) do 
+        if ROUND.PLAYER_STATE_NOW[playerid] then 
+            local r = Player:hideUIView(playerid,ROUND.PLAYER_STATE_NOW[playerid])
+        end 
     end 
 end 

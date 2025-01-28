@@ -180,7 +180,7 @@ MONSTER_DATA:NEW({
         -- Executed on Target 
         print("Executing Target : ",targetid,"Playerid : ",playerid);
     end,
-    price = 500,
+    price = 1000,
     type_currency = "Crystal",
     model = {
         normal = [[mob_7]],

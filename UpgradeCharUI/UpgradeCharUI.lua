@@ -256,7 +256,7 @@ function UpgradeUI:OpenUpgradeUI(playerid, category, id)
             -- adjust Camera 
             Player:ResetCameraAttr(playerid);
             Player:changeViewMode(playerid, 2 , true);
-            Player:SetCameraPosTransformBy(playerid, {x=150,y=-20}, 1, 0.5);
+            Player:SetCameraPosTransformBy(playerid, {x=250,y=-20}, 1, 0.5);
             local result,yaw=Actor:getFaceYaw(playerid)
             Player:rotateCamera(playerid,yaw,-15)
             isUI_Opened[playerid] = true;

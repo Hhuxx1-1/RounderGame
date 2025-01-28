@@ -12,6 +12,9 @@ local ActionUIBtn = {
     ["7455624551810668786_42"] = function(playerid)
         UpgradeUI:OpenUpgradeUI(playerid, "Monster", 1);
     end,
+    ["7455624551810668786_46"] = function(playerid)
+        UpgradeUI:OpenUpgradeUI(playerid, "Survivor", 1);
+    end,
     ["7455624551810668786_6"] = function(playerid)
         ROUND:setState(playerid,"7455649763268696306");
         Player:openUIView(playerid,"7455649763268696306");

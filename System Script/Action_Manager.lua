@@ -1,4 +1,74 @@
 ACTION = {}; -- Holder for Global function 
+ACTION_DATA = {DATA={},PLAYER={}} -- Store Global Method and Logic here 
+-- Handle Action Data and Store Action of Block when Being clicked here
+
+-- function to initiate and store into data 
+function ACTION_DATA:NEW(id,func)
+    if type(func) == "function" then 
+        ACTION_DATA.DATA[id] = func
+    end 
+end
+
+-- function to run stored data on Action Data DATA  
+function ACTION_DATA:RUN(id,playerid,x,y,z)
+    if ACTION_DATA.DATA[id] then
+        ACTION_DATA.DATA[id](playerid,x,y,z)
+    end 
+end
+
+-- Handle Survivor Action Seemlessly Here
+function ACTION_DATA:ADD(playerid, action, channeling_duration, name,animation_id)
+    if not ACTION_DATA.PLAYER[playerid] then
+        ACTION_DATA.PLAYER[playerid] = {a = action,b=animation_id,c=channeling_duration,mx=channeling_duration,n=name};
+    else
+        Player:notifyGameInfo2Self(playerid,"Busy");
+    end 
+end 
+
+-- function to clear Action Data of player
+function ACTION_DATA:REMOVE(playerid)
+    if ACTION_DATA.PLAYER[playerid] then
+        ACTION_DATA.PLAYER[playerid] = nil;
+    end
+end 
+
+-- function to check if Player has Action Data
+function ACTION_DATA:TRY_RUN(playerid)
+    local UI = "7458520283186141426"; --update the UI according to player state
+    if self.PLAYER[playerid] ~= nil then 
+        
+        local bgbar,crbar,txtbr = "7458520283186141426_1","7458520283186141426_2","7458520283186141426_3";
+        local width,height = 280,20;
+        -- it has player data 
+        if self.PLAYER[playerid].c > 0 then
+            -- it is channeling
+            local p = self.PLAYER[playerid].c - 0.05;
+            local bar = (1-p/self.PLAYER[playerid].mx)*width;
+            self.PLAYER[playerid].c = p;            
+            
+            Customui:setSize(playerid,UI,crbar,bar,height);
+
+            Customui:setText(playerid,UI,txtbr,self.PLAYER[playerid].n.." "..string.format("%.1f",p).."s left");
+        else 
+            -- execute the function 
+            if self.PLAYER[playerid].a and type(self.PLAYER[playerid].a) == "function" then
+                local er,err = pcall(self.PLAYER[playerid].a,playerid);
+                if not er then
+                    print(err);
+                end 
+                -- clear the self.PLAYER[playerid]
+                self.PLAYER[playerid] = nil;
+            end 
+        end 
+        -- open the UI View
+        Player:openUIView(playerid,UI);
+        return true;
+    else 
+        -- close the UI View
+        Player:hideUIView(playerid,UI);
+        return false;
+    end 
+end
 
 function ACTION:NEW(playerid,channeling_duration,func,animation_id,force) 
     if animation_id == nil then         animation_id = 1;    end 
@@ -59,7 +129,6 @@ function IsSamePosition(entityId, newPosition)
     return distance == 0;
 end
 
-
 -- local switch = false;
 -- Handle Run, Walk, Slowed Debuff Here 
 local function updateSpeed(playerid,data,tick) 
@@ -115,7 +184,7 @@ local function updateSpeed(playerid,data,tick)
     -- handle blinded 
     if blind and blind > 0 then 
         blind = math.max(blind-0.1,0);
-        World:SetSkyBoxFilter(playerid, SKYBOXFILTER.GAMMA, math.max(50-(blind*5),0));
+        World:SetSkyBoxFilter(playerid, SKYBOXFILTER.GAMMA, math.max(60-(blind*5),0));
     end 
     
     -- handle Slowed 
@@ -337,71 +406,105 @@ local function UpdateSurvivor(Survivor,tick)
         hp_bar = 4, 
         hp_text = 5, 
         backpack = {
-            {btn = 48 } , {btn = 55} , {btn = 62} 
-        }
+            { btn = 48 , bg=49 , n=50 , q = 51 , ic=52 , nt = 53} , 
+            { btn = 55 , bg=56 , n=57 , q = 58 , ic=59 , nt = 60} ,
+            { btn = 62 , bg=63 , n=64 , q = 65 , ic=66 , nt = 67} 
+        },
+        objective = 8
     }
 
     local hp_bar_maximum_length,hp_bar_maximum_hight = 297 , 34;
 
     for survivorid,data in pairs(Survivor) do 
-
-        -- Update the HP Bar 
-        local r1,maxHP = Player:getAttr(survivorid,1);
-        local r2,curHP = Player:getAttr(survivorid,2);
-        -- make sure that both are exist 
-        if r1 == 0 and r2 == 0 then 
-            Customui:setSize(survivorid,UI,UI.."_"..element.hp_bar,curHP/maxHP*hp_bar_maximum_length,hp_bar_maximum_hight);
-            Customui:setText(survivorid,UI,UI.."_"..element.hp_text,math.floor(curHP));
-        end 
-
-        -- Update the Backpack Bar 
-        for slot,backpack in ipairs(data.backpack) do 
-            if backpack.name == "empty" then 
-                Customui:hideElement(survivorid,UI,UI.."_"..element.backpack[slot].btn);
-            else 
-                Customui:showElement(survivorid,UI,UI.."_"..element.backpack[slot].btn);
+        if not data.died then 
+            -- Update the HP Bar 
+            local r1,maxHP = Player:getAttr(survivorid,1);
+            local r2,curHP = Player:getAttr(survivorid,2);
+            -- make sure that both are exist 
+            if r1 == 0 and r2 == 0 then 
+                Customui:setSize(survivorid,UI,UI.."_"..element.hp_bar,curHP/maxHP*hp_bar_maximum_length,hp_bar_maximum_hight);
+                Customui:setText(survivorid,UI,UI.."_"..element.hp_text,math.floor(curHP));
             end 
-        end 
 
-        -- check if Survivor is Out of HP 
-        local r,err = pcall(function()
-            if curHP < 1 then 
-                -- survivor HP is 0;
-                -- immediately remove from ROUND.GAME_DATA_NOW.data_survivor 
-                ROUND.GAME_DATA_NOW.data_survivor[survivorid] = nil; 
-                -- Run Executed Cutscene;
-                RunExecutionCutscene(survivorid);
+            -- Update the Backpack Bar 
+            for slot,backpack in ipairs(data.backpack) do 
+                if backpack.name == "empty" then 
+                    Customui:hideElement(survivorid,UI,UI.."_"..element.backpack[slot].btn);
+                else 
+                    Customui:showElement(survivorid,UI,UI.."_"..element.backpack[slot].btn);
+                    if backpack.icon then 
+                        -- display the backpack icon 
+                        Customui:setTexture(survivorid,UI,UI.."_"..element.backpack[slot].ic,backpack.icon);
+                    end 
+                    if backpack.name then 
+                        -- display the backpack item name
+                        Customui:setText(survivorid,UI,UI.."_"..element.backpack[slot].n,backpack.name);
+                    end 
+                    if backpack.num then 
+                        -- display the backpack item num  
+                        Customui:setText(survivorid,UI,UI.."_"..element.backpack[slot].q,backpack.num.."");
+                    end 
+                    if backpack.label then 
+                        -- display the backpack item type
+                        Customui:setText(survivorid,UI,UI.."_"..element.backpack[slot].nt,backpack.label);
+                    end 
+                end 
             end 
-        end)
-        if not r then
-            print("Error 195 : ",err);
-        end 
 
-        -- try update Speed 
-        local rSpeed,ErrSpeed = pcall(function()
-            local staminaNow,isRunning,debuffSlow,stunned,blind = updateSpeed(survivorid,{
-                speed       = ROUND.GAME_DATA_NOW.data_survivor[survivorid].speed,
-                sp          = ROUND.GAME_DATA_NOW.data_survivor[survivorid].sp,
-                spmax       = ROUND.GAME_DATA_NOW.data_survivor[survivorid].stamina,
-                isRun       = running[survivorid] or false,
-                slowed      = ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.slowed or 0,
-                stunned     = ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.stunned or 0,
-                blind       = ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.blind or 0,
-                bonusSpeed  = ROUND.GAME_DATA_NOW.data_survivor[survivorid].bonus_speed or 0,
-            },tick)
-            
-            -- Update the Main Data 
-            running[survivorid] = isRunning;
-            ROUND.GAME_DATA_NOW.data_survivor[survivorid].sp = staminaNow;
-            ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.slowed = debuffSlow;
-            ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.stunned = stunned;
-            ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.blind = blind;
-        end);
+            -- Update Objective bar 
+            if ROUND.GAME_DATA_NOW.objString then 
+                Customui:setText(survivorid,UI,UI.."_"..element.objective,ROUND.GAME_DATA_NOW.objString)
+            end 
+            -- check if Survivor is Out of HP 
+            local r,err = pcall(function()
+                if curHP < 1 then 
+                    -- survivor HP is 0;
+                    -- immediately remove from ROUND.GAME_DATA_NOW.data_survivor 
+                    if ROUND.GAME_DATA_NOW.data_survivor[survivorid] then 
+                        ROUND.GAME_DATA_NOW.data_survivor[survivorid].died = true; 
+                    end 
+                    -- Run Executed Cutscene;
+                    RunExecutionCutscene(survivorid);
+                end 
+            end)
+            if not r then
+                print("Error 195 : ",err);
+            end 
 
-        if not rSpeed then 
-            print(ErrSpeed);
+            -- try update Speed 
+            local rSpeed,ErrSpeed = pcall(function()
+                local staminaNow,isRunning,debuffSlow,stunned,blind = updateSpeed(survivorid,{
+                    speed       = ROUND.GAME_DATA_NOW.data_survivor[survivorid].speed,
+                    sp          = ROUND.GAME_DATA_NOW.data_survivor[survivorid].sp,
+                    spmax       = ROUND.GAME_DATA_NOW.data_survivor[survivorid].stamina,
+                    isRun       = running[survivorid] or false,
+                    slowed      = ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.slowed or 0,
+                    stunned     = ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.stunned or 0,
+                    blind       = ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.blind or 0,
+                    bonusSpeed  = ROUND.GAME_DATA_NOW.data_survivor[survivorid].bonus_speed or 0,
+                },tick)
+                
+                -- Update the Main Data 
+                running[survivorid] = isRunning;
+                ROUND.GAME_DATA_NOW.data_survivor[survivorid].sp = staminaNow;
+                ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.slowed = debuffSlow;
+                ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.stunned = stunned;
+                ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.blind = blind;
+            end);
+
+            if not rSpeed then 
+                print(ErrSpeed);
+            end 
+
+            -- try Check Action State 
+            if ACTION_DATA:TRY_RUN(survivorid) then 
+                ROUND.GAME_DATA_NOW.data_survivor[survivorid].debuff.stunned = 1;
+            end 
+            -- this Only Works For Survivor 
+        else 
+            -- player is dead 
         end 
-    end
+    end 
 end
 
 function ACTION:UPDATE(tick)
@@ -497,4 +600,17 @@ ScriptSupportEvent:registerEvent("Player.DamageActor",function(e)
     Player:setMobileVibrate(playerid, 1.5, 150);
     
     f_H:playSoundOnActor(playerid,10383, 100, 1.2);
+end)
+
+ScriptSupportEvent:registerEvent("Player.ClickBlock",function(e)
+    local playerid,b,x,y,z = e.eventobjid,e.blockid,e.x,e.y,e.z;
+    -- this runs Saved Action Data using b as id Action
+    local r ,err =pcall(function()    
+        
+        if ACTION_DATA.DATA[b] then 
+            ACTION_DATA:RUN(b,playerid,x,y,z);
+        end 
+    end)
+
+    if not r then print(err) end;
 end)

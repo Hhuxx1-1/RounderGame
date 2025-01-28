@@ -1,46 +1,50 @@
--- Map Voting System
--- TO Do add Objective in Map Data and Time Play Duration; Each Map is Different;
-local MAP_DATA = {
-    {   key             =  "Map1"
-    ,   Name            = "Asylum"
-    ,   StateBlockId    =  501                      -- Determine State of Player special function for special alhoritm
-    ,   PositionStart   = {x = 72, y = 5, z = 106}          --Must Contain x,y,z key and value is number where it represent Coordinate in Vector 3 
-    ,   FacingStart     = 1                         -- 1, 2, 3, 4 is north , east , south , west    
-    ,   RangeStart      = 2                         --Dimension Radius for Start
-    ,   PositionMonster = {x = 83, y = 8 , z = 106 }
-    ,   TimeDuration    = 180
-    ,   SkyBoxTemplate  = 7
-    ,   FilterTemplate  = 9
-    ,   HourTime        = 4
-    ,   ImageUrl        = "https://example.com/example.png"
-    },
-    {   key             = "Map2"
-    ,   Name            = "Prison"
-    ,   StateBlockId    =  537                       -- Determine State of Player special function for special alhoritm
-    ,   PositionStart   = {x=183,y=5,z=113}          --Must Contain x,y,z key and value is number where it represent Coordinate in Vector 3 
-    ,   FacingStart     = 2                          -- 1, 2, 3, 4 is north , east , south , west    
-    ,   RangeStart      = 3                          --Dimension Radius for Start
-    ,   PositionMonster = {x = 166, y = 6 , z = 113 }
-    ,   TimeDuration    = 360
-    ,   SkyBoxTemplate  = 7
-    ,   FilterTemplate  = 7
-    ,   HourTime        = 4
-    ,   ImageUrl        = "https://example.com/example.png"
-    },
-    {   key             = "Map3"
-    ,   Name            = "Basement      "
-    ,   StateBlockId    =  208                       -- Determine State of Player special function for special alhoritm
-    ,   PositionStart   = {x=138,y=13,z=183}         --Must Contain x,y,z key and value is number where it represent Coordinate in Vector 3 
-    ,   FacingStart     = 1                          -- 1, 2, 3, 4 is north , east , south , west    
-    ,   RangeStart      = 3                          --Dimension Radius for Start
-    ,   PositionMonster = {x = 136, y = 11 , z = 202 }
-    ,   TimeDuration    = 180
-    ,   SkyBoxTemplate  = 7
-    ,   FilterTemplate  = 7
-    ,   HourTime        = 4
-    ,   ImageUrl        = "https://example.com/example.png"
+local MAP_DATA = {};
+-- Function to add a new map into MAP_DATA
+function REGISTER_MAP(data)
+    -- Validate required fields
+    if not data.Name or not data.StateBlockId or not data.PositionStart or not data.PositionMonster or not data.TimeDuration then
+        print("Error: Missing required map data fields.")
+        return false
+    end
+
+    -- Ensure PositionStart and PositionMonster have valid coordinates
+    if not (data.PositionStart.x and data.PositionStart.y and data.PositionStart.z) then
+        print("Error: Invalid PositionStart coordinates.")
+        return false
+    end
+    if not (data.PositionMonster.x and data.PositionMonster.y and data.PositionMonster.z) then
+        print("Error: Invalid PositionMonster coordinates.")
+        return false
+    end
+
+    -- Generate a unique key for the new map
+    local newIndex = #MAP_DATA + 1
+    local newKey = "Map" .. newIndex
+
+    -- Create the new map entry
+    local newMap = {
+        key             = newKey,
+        Name            = data.Name,
+        StateBlockId    = data.StateBlockId,
+        PositionStart   = data.PositionStart,
+        FacingStart     = data.FacingStart      or 1, -- Default to 1 (north)
+        RangeStart      = data.RangeStart       or 3, -- Default radius
+        PositionMonster = data.PositionMonster,
+        TimeDuration    = data.TimeDuration,
+        SkyBoxTemplate  = data.SkyBoxTemplate   or 7, -- Default skybox template
+        FilterTemplate  = data.FilterTemplate   or 7, -- Default filter template
+        HourTime        = data.HourTime         or 4, -- Default hour time
+        ImageUrl        = data.ImageUrl         or [[4003021]], -- Default image URL
+        Prop            = data.Prop             or {},
+        Objective       = data.Objective        or function() return "No Objective" end,
     }
-}
+
+    -- Insert the new map into the MAP_DATA table
+    table.insert(MAP_DATA, newMap)
+    print("New map registered successfully with key:", newKey)
+    return true
+end
+
 
 MAP_VOTING = {
     AVAILABLE_MAPS = {}, -- this later will be assigned 3 maps from MAP_DATA;
@@ -64,6 +68,7 @@ function MAP_VOTING:fetch(key)
     -- Function to fetch map data by key
     for _, map in ipairs(MAP_DATA) do
         if map.key == key then
+            -- make a copy 
             return map -- Return the map data if the key matches
         end
     end
@@ -101,9 +106,18 @@ function MAP_VOTING:ClearShownMapVote ()
     local position = {
         {x=74,y=6,z=15}, {x=70,y=6,z=15} ,{x=66,y=6,z=15};
     }
+    local billboard = {
+        40000000,40000001,40000002
+    }
     for i = 1 , 3 do
         Graphics:removeGraphicsByPos(position[i].x,position[i].y,position[i].z, i, 1)
         Graphics:removeGraphicsByPos(position[i].x,position[i].y,position[i].z, i+3, 1)
+        -- display picture on billboard
+        local result,num,allPlayer=World:getAllPlayers(-1)
+
+        for _,playerid in ipairs(allPlayer) do 
+            local result = DisPlayBoard:setBoardPicture(playerid, billboard[i],[[8_1029380338_1711289202]]);
+        end 
     end 
     MAP_VOTING.ShownMapVote_Data = {};
 end
@@ -111,6 +125,9 @@ end
 function MAP_VOTING:ShowMapVoting()
     local position = {
         {x=74,y=6,z=15}, {x=70,y=6,z=15} ,{x=66,y=6,z=15};
+    }
+    local billboard = {
+        40000000,40000001,40000002
     }
     -- print("Available Maps data ",self.AVAILABLE_MAPS);
     for i = 1 , 3 do
@@ -121,7 +138,7 @@ function MAP_VOTING:ShowMapVoting()
             local MapName = MapData.Name;
             local vote = self.VOTE_COUNTS[MapKey];
             local r,areaid = Area:createAreaRect(position[i], {x=1,y=1,z=1});
-            MAP_VOTING.ShownMapVote_Data[i] = {key = MapKey,MapName = MapName, VoteNum = vote , areaid = areaid};
+            MAP_VOTING.ShownMapVote_Data[i] = {key = MapKey,MapName = MapName, VoteNum = vote , areaid = areaid, pic = MapData.ImageUrl};
         else 
         -- Display it to the world
             local fontsize , alpha = 13,60;
@@ -134,6 +151,13 @@ function MAP_VOTING:ShowMapVoting()
             local result , graphid2 = Graphics:createGraphicsTxtByPos(
             position[i].x,position[i].y,position[i].z,
             VoteNum,xx1,yy1);
+            -- display picture on billboard
+            local result,num,allPlayer=World:getAllPlayers(-1)
+
+            for _,playerid in ipairs(allPlayer) do 
+                local result = DisPlayBoard:setBoardPicture(playerid, billboard[i],MAP_VOTING.ShownMapVote_Data[i].pic);
+            end 
+
         end 
     end 
     Graphics:snycGraphicsInfo2Client()
