@@ -276,24 +276,28 @@ local function UpdateMonster(MONSTER_DATA,tick)
                     -- setThe Pic Color as cooldown 
                     if CD <= 1 and math.fmod(math.floor(CD*500),4) >= 2 then 
                         Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].pic,color.just_ready);
+                        -- set the Button Color 
+                        Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].btn,btn_color.ready);
                     else
                         Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].pic,color.cooldown);
+                        -- set the Button Color 
+                        Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].btn,btn_color.cd);
                     end 
                     -- Update The UI to Show that The Skill is Cooldown 
                     Customui:setText(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].s,string.format("%.1f", CD).."s");
 
-                    -- set the Button Color 
-                    Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].btn,btn_color.cd);
                 else
                     -- Skill is Ready 
 
                     -- setThe Pic Color as Ready 
                     Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].pic,color.ready);
+                    -- set the Button Color 
+                    Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].btn,btn_color.ready);
+
                     -- Hide Skill Cooldown Text;
                     Customui:setText(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].s,"");
 
-                    -- set the Button Color 
-                    Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].btn,btn_color.ready);
+                    
                 end 
 
                 -- Hide Lock Icon 
@@ -321,6 +325,9 @@ local function UpdateMonster(MONSTER_DATA,tick)
 
                     -- set Color as Disabled 
                     Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].pic,color.disabled);
+
+                    --  set the Button Color
+                    Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].btn,btn_color.cd);
                 end 
             end 
 
@@ -331,8 +338,7 @@ local function UpdateMonster(MONSTER_DATA,tick)
                 Customui:setTexture(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].pic,[[8_1029380338_1719587945]]);
             end 
 
-            -- set the Button Color
-            Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].btn,btn_color.cd);
+
         end 
 
         -- Basic Attack Cooldown Logic 
