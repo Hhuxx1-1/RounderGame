@@ -519,7 +519,13 @@ function ROUND:Update(second, tick, players)
                         Player:setPosition(uin or 0,x,y,z);
                     end 
                     self.GAME_DATA_NOW.delay = self.GAME_DATA_NOW.delay - 1;
-
+                    local textLoading = "Please Wait\n";
+                    for i=1,math.max(math.ceil(math.fmod(self.GAME_DATA_NOW.delay,10)/2),1) do 
+                        textLoading=textLoading..". ";
+                    end 
+                    for _,playerid in ipairs(self.PLAYER_READY) do 
+                        Customui:setText(playerid,UIS.Loading_UI,UIS.Loading_UI.."_3",textLoading);
+                    end 
                 else 
                     local checkTeleport = 0
                     checkTeleport = checkTeleport + self:teleportPlayerToPlayArena(self.MONSTER,"Monster");
@@ -535,13 +541,6 @@ function ROUND:Update(second, tick, players)
                             self.TIME_END = GAME_SECOND + tonumber(self.GAME_DATA_NOW.map.TimeDuration);
                         end;
                     end 
-                end 
-                local textLoading = "Preparing";
-                for i=1,math.fmod(self.GAME_DATA_NOW.delay,3)+1 do 
-                    textLoading=textLoading..".";
-                end 
-                for _,playerid in ipairs(self.PLAYER_READY) do 
-                    Customui:setText(playerid,UIS.Loading_UI,UIS.Loading_UI.."_3",textLoading);
                 end 
             end 
         else
