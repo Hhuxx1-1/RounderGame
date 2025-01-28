@@ -242,6 +242,8 @@ local function UpdateMonster(MONSTER_DATA,tick)
         disabled    = 0xff0000,
         just_ready  = 0xe9ff00
     }
+
+    local btn_color = {cd = 0x4e5251,ready = 0xff0000};
     -- print("Updating Monster",MONSTER_DATA);
     -- for Skill Cooldown Logic ; 
     for playerid,data in pairs(MONSTER_DATA) do 
@@ -279,6 +281,9 @@ local function UpdateMonster(MONSTER_DATA,tick)
                     end 
                     -- Update The UI to Show that The Skill is Cooldown 
                     Customui:setText(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].s,string.format("%.1f", CD).."s");
+
+                    -- set the Button Color 
+                    Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].btn,btn_color.cd);
                 else
                     -- Skill is Ready 
 
@@ -286,6 +291,9 @@ local function UpdateMonster(MONSTER_DATA,tick)
                     Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].pic,color.ready);
                     -- Hide Skill Cooldown Text;
                     Customui:setText(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].s,"");
+
+                    -- set the Button Color 
+                    Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].btn,btn_color.ready);
                 end 
 
                 -- Hide Lock Icon 
@@ -322,6 +330,9 @@ local function UpdateMonster(MONSTER_DATA,tick)
             else 
                 Customui:setTexture(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].pic,[[8_1029380338_1719587945]]);
             end 
+
+            -- set the Button Color
+            Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI[skill.key].btn,btn_color.cd);
         end 
 
         -- Basic Attack Cooldown Logic 
@@ -339,6 +350,9 @@ local function UpdateMonster(MONSTER_DATA,tick)
             end 
             -- Update The UI to Show that The Skill is Cooldown 
             Customui:setText(tonumber(playerid),UI,UI.."_"..key_UI.basicAttack.s,string.format("%.1f", CD).."s");
+
+            -- set the button Color 
+            Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI.basicAttack.btn,btn_color.cd);
         else
             -- Skill is Ready 
 
@@ -346,6 +360,9 @@ local function UpdateMonster(MONSTER_DATA,tick)
             Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI.basicAttack.pic,color.ready);
             -- Hide Skill Cooldown Text;
             Customui:setText(tonumber(playerid),UI,UI.."_"..key_UI.basicAttack.s,"");
+
+            -- set the button Color 
+            Customui:setColor(tonumber(playerid),UI,UI.."_"..key_UI.basicAttack.btn,btn_color.ready);
         end 
 
 
@@ -612,5 +629,28 @@ ScriptSupportEvent:registerEvent("Player.ClickBlock",function(e)
         end 
     end)
 
+    if not r then print(err) end;
+end)
+
+-- ScriptSupportEvent:registerEvent("Player.SelectShortcut",function(e)
+--     local playerid = e.eventobjid;
+--     -- print("Shortcut Bar Acceess : ",e);
+--     local CurEventParam = e.CurEventParam;
+--     if CurEventParam then 
+--         local shortcutIndex = CurEventParam.EventShortCutIdx + 1;
+--         local r,err = pcall(BACKPACK_ITEM.USE,BACKPACK_ITEM,playerid, shortcutIndex);
+--         if not r then print(err) end;
+--     end 
+-- end)
+
+ScriptSupportEvent:registerEvent("SURVIVOR_ACTION",function(e)
+
+    local playerid = e.eventobjid;
+    local data = e.customdata;
+    local index_data = tonumber(string.match(data, "%d+"))
+
+    print("Backpack bar Click = "..index_data);
+    
+    local r,err = pcall(BACKPACK_ITEM.USE,BACKPACK_ITEM,playerid, index_data);
     if not r then print(err) end;
 end)
