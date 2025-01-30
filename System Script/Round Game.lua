@@ -1047,6 +1047,14 @@ function ROUND:LoadProp()
     if Map.Prop and Map.Prop ~= {} then 
         if self.GAME_DATA_NOW.countdown > 0 then 
             self.GAME_DATA_NOW.countdown = self.GAME_DATA_NOW.countdown - 1;
+            -- set loading screen 
+            local textLoading = "Loading Prop \n ("..#Map.Prop.." Left )\n"
+            for i=1,self.GAME_DATA_NOW.countdown do 
+                textLoading=textLoading.."."
+            end 
+            for _,playerid in ipairs(self.PLAYER_READY) do 
+                Customui:setText(playerid,UIS.Loading_UI,UIS.Loading_UI.."_3",textLoading);
+            end 
         else
             local function doProp()
                 for i = #Map.Prop,1 ,-1 do 
@@ -1069,13 +1077,13 @@ function ROUND:LoadProp()
                                 -- check player position 
                                 local r,px,py,pz = Actor:getPosition(uin or 0);
                                 -- Chat:sendSystemMsg("x = "..x.." px = "..px.."|  y = "..y.." px = "..py.."| z = "..z.." pz = "..pz);
-                                if px ~= x or py ~= y or pz ~= z then
+                                if px ~= x or pz ~= z then
                                     Player:setPosition(uin or 0,x,y,z);
                                 else
                                     Block:placeBlock(prop.id,x,y,z,prop.f,prop.f);
                                     -- Block:setBlockAll(x,y,z,prop.id,prop.f,prop.f,prop.f); 
                                 end 
-                                self.GAME_DATA_NOW.countdown = 10;
+                                self.GAME_DATA_NOW.countdown = 4;
                                 return;
                             end 
                         end 
@@ -1085,14 +1093,7 @@ function ROUND:LoadProp()
 
             local r, err = pcall(doProp);
             if not r then print(err) end;
-            -- set loading screen 
-            local textLoading = "Loading Prop \n ("..#Map.Prop.." Left )\n"
-            for i=1,self.GAME_DATA_NOW.countdown do 
-                textLoading=textLoading.."."
-            end 
-            for _,playerid in ipairs(self.PLAYER_READY) do 
-                Customui:setText(playerid,UIS.Loading_UI,UIS.Loading_UI.."_3",textLoading);
-            end 
+
             if #Map.Prop == 0 then 
                 return true;
             else 

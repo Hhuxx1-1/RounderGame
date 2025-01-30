@@ -36,7 +36,7 @@ function REGISTER_MAP(data)
         HourTime        = data.HourTime         or 4, -- Default hour time
         ImageUrl        = data.ImageUrl         or [[4003021]], -- Default image URL
         Prop            = data.Prop             or {},
-        Objective       = data.Objective        or function() return "No Objective" end,
+        Objective       = data.Objective        or function() return "Survive Until Timer Ends" end,
     }
 
     -- Insert the new map into the MAP_DATA table
