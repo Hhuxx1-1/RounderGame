@@ -22,6 +22,15 @@ local ActionUIBtn = {
     ["7455624551810668786_39"] = function(playerid)
         ROUND:setState(playerid,"7462634028632054002");
         Player:openUIView(playerid,"7462634028632054002");
+    end,
+    ["7455624551810668786_5"] = function(playerid)
+        return
+    end,
+    ["7455624551810668786_30"] = function(playerid)
+        return
+    end,
+    ["7455624551810668786_35"] = function(playerid)
+        return
     end
 }
 

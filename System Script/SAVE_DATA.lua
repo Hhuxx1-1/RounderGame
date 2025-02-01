@@ -16,9 +16,9 @@ function SAVE_DATA:LOAD_ALL(playerid)
         -- Fetch all data for the player
         local result, ret = Valuegroup:getAllGroupItem(self.vartype, self.libname, playerid)
         if result ~= 0 then
-            print("Failed to load player data")
+          --print("Failed to load player data")
         end
-        print("Ret : ",ret)
+      --print("Ret : ",ret)
         -- Parse and store data in self.data[playerid]
         self.data[playerid] = {}
         for _, entry in ipairs(ret) do
@@ -32,17 +32,17 @@ function SAVE_DATA:LOAD_ALL(playerid)
             })
         end
 
-        print( "Loaded data for player:", playerid, self.data[playerid] );
+      --print( "Loaded data for player:", playerid, self.data[playerid] );
     end)
     if not r then
-        print( "Error Loading Player Data:", err );
+      --print( "Error Loading Player Data:", err );
     end
 end
 
 function SAVE_DATA:GET(playerid, variableName)
     -- Ensure data is loaded
     if not self.data[playerid] then
-        print("No data loaded for player:", playerid)
+      --print("No data loaded for player:", playerid)
         return nil
     end
 
@@ -53,7 +53,7 @@ function SAVE_DATA:GET(playerid, variableName)
         end
     end
 
-    print("Variable not found:", variableName, "for player:", playerid)
+  --print("Variable not found:", variableName, "for player:", playerid)
     return nil
 end
 
@@ -79,15 +79,17 @@ function SAVE_DATA:MODIFY(playerid, variableName, newValue)
                 -- Update the value in the local table
                 entry.variableValue = tostring(newValue)
 
-                print("Modified data for player:", playerid, "variable:", variableName, "new value:", newValue)
+              --print("Modified data for player:", playerid, "variable:", variableName, "new value:", newValue)
                 return
             end
         end
-
+        if Valuegroup:clearGroupByName(SAVE_DATA.vartype, SAVE_DATA.libname,playerid) == 0 then 
+            Player:notifyGameInfo2Self(playerid," DATA ERROR: [Data is Cleared]");
+        end 
         error("Variable not found for modification: " .. variableName)
     end)
     if not r then
-        print("Error Modifying Player Data:", err)
+      --print("Error Modifying Player Data:", err)
     end
 end
 
@@ -98,7 +100,7 @@ function SAVE_DATA:NEW(playerid, data)
         _data = { variableName = data[1], typeOfVariable = data[2], variableValue = data[3]}
     end)
     if not _r then
-        print("Error When Constructing Data:", "Error At NEW:\n", _err)
+      --print("Error When Constructing Data:", "Error At NEW:\n", _err)
         return
     end
 
@@ -109,7 +111,7 @@ function SAVE_DATA:NEW(playerid, data)
         encodedData = string.format("%s|%s|%s|%s", self.KEY , _data.variableName, _data.typeOfVariable, _data.variableValue)
     end)
     if not r then
-        print("Error Encoding Data:", err)
+      --print("Error Encoding Data:", err)
         return
     end
 
@@ -118,18 +120,18 @@ function SAVE_DATA:NEW(playerid, data)
         -- Get the current length of the group for the player
         local result, currentLength = Valuegroup:getGrouplengthByName(self.vartype, self.libname, playerid)
         if result ~= 0 then
-            print("Failed to get current length of the group")
+          --print("Failed to get current length of the group")
         end
 
         -- Add the encoded data to the group
         local insertResult = Valuegroup:insertInGroupByName(self.vartype, self.libname, encodedData, playerid)
         if insertResult ~= 0 then
-            print("Failed to insert data into the group")
+          --print("Failed to insert data into the group")
         end
 
-        print("Data successfully added at index:", currentLength + 1)
+      --print("Data successfully added at index:", currentLength + 1)
     end)
     if not insertResult then
-        print("Error Adding Data:", insertError)
+      --print("Error Adding Data:", insertError)
     end
 end
