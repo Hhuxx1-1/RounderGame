@@ -331,10 +331,10 @@ function ROUND:GAME_ADD(map,monster,survivor)
     for _,_monster in ipairs(monster) do 
 
         -- add into monsterData table MONSTER_DATA by Fetch 
-        monsterData[_monster] = MONSTER_DATA:FETCH(SAVE_DATA:GET(_monster,"Equipped_Monster").variableValue);
+        monsterData[_monster] = MONSTER_DATA:FETCH(SAVE_DATA:GET(_monster,"Equipped_Monster").v);
 
         -- Load Level equipped by Player 
-        local level = (SAVE_DATA:GET(_monster,monsterData[_monster].key.."_LEVEL") ~= nil) and tonumber(SAVE_DATA:GET(_monster,monsterData[_monster].key.."_LEVEL").variableValue) or 1;
+        local level = (SAVE_DATA:GET(_monster,monsterData[_monster].key.."_LEVEL") ~= nil) and tonumber(SAVE_DATA:GET(_monster,monsterData[_monster].key.."_LEVEL").v) or 1;
         monsterData[_monster].level = level;
 
         -- Add Skill Active holder in CD as 0 for later use 
@@ -370,7 +370,7 @@ function ROUND:GAME_ADD(map,monster,survivor)
     local survivorData = {};
 
     for _,_survivor in ipairs(survivor) do
-        survivorData[_survivor] = SURVIVOR_DATA:FETCH(SAVE_DATA:GET(_survivor,"Equipped_Survivor").variableValue);
+        survivorData[_survivor] = SURVIVOR_DATA:FETCH(SAVE_DATA:GET(_survivor,"Equipped_Survivor").v);
         survivorData[_survivor].backpack    = {
                 {
                     name  = "empty",

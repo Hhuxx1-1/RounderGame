@@ -82,7 +82,7 @@ function UpgradeUI:LevelUp(playerid, category, id)
     if not data then return end
 
     -- get Player level to determine Cost 
-    local level = (SAVE_DATA:GET(playerid,data.key.."_LEVEL") ~= nil) and tonumber(SAVE_DATA:GET(playerid,data.key.."_LEVEL").variableValue) or 1;
+    local level = (SAVE_DATA:GET(playerid,data.key.."_LEVEL") ~= nil) and tonumber(SAVE_DATA:GET(playerid,data.key.."_LEVEL").v) or 1;
 
     local nextLevelCost = (data.rarity^2) * level * 200;
 
@@ -279,7 +279,7 @@ function UpgradeUI:OpenUpgradeUI(playerid, category, id)
     -- set The Skill Title and Content 
 
     -- get Player level to determine skill lock or unlock 
-    local level = (SAVE_DATA:GET(playerid,data.key.."_LEVEL") ~= nil) and SAVE_DATA:GET(playerid,data.key.."_LEVEL").variableValue or 1;
+    local level = (SAVE_DATA:GET(playerid,data.key.."_LEVEL") ~= nil) and SAVE_DATA:GET(playerid,data.key.."_LEVEL").v or 1;
     
     local nextLevelCost = (data.rarity^2) * level * 200;
 
@@ -292,7 +292,7 @@ function UpgradeUI:OpenUpgradeUI(playerid, category, id)
     if save_data_item then 
         -- player already purchase it 
         -- check if monster or survivor  is Equipped or not 
-        local id_equipped = SAVE_DATA:GET(playerid,"Equipped_"..category).variableValue;
+        local id_equipped = SAVE_DATA:GET(playerid,"Equipped_"..category).v;
         -- id_equipped is prefixed with category _ id 
         id_equipped = string.lower(category).."_"..id_equipped;
         if id_equipped == data.key then

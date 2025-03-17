@@ -127,9 +127,9 @@ function Shop:UpdateUI(playerid, item, category,c_index)
     -- use GLOBAL_CURRENCY for checking if player can buy or can't buy 
 
     -- check if item is owned or not 
-    local saved_data_item = SAVE_DATA:GET(playerid,item.key) or {variableValue=[[0]]};
+    local saved_data_item = SAVE_DATA:GET(playerid,item.key) or {v=[[0]]};
     -- print(saved_data_item,item.key);
-    if saved_data_item.variableValue ~= [[1]] then 
+    if saved_data_item.v ~= [[1]] then 
         -- item isn't Owned 
         if GLOBAL_CURRENCY:TrySpend(playerid,item.type_currency,tonumber(item.price)) then 
             -- Player Can Buy 
@@ -169,7 +169,7 @@ function Shop:UpdateUI(playerid, item, category,c_index)
         -- Item is already Bought 
         -- check is it Equipped item or not 
         -- get Id of Equipped_Monster  from SAVE_DATA 
-        local id_equipped = (SAVE_DATA:GET(playerid,"Equipped_"..category) ~= nil) and SAVE_DATA:GET(playerid,"Equipped_"..category).variableValue or 0;
+        local id_equipped = (SAVE_DATA:GET(playerid,"Equipped_"..category) ~= nil) and SAVE_DATA:GET(playerid,"Equipped_"..category).v or 0;
         -- id_equipped is prefixed with category _ id 
         id_equipped = string.lower(category).."_"..id_equipped;
         -- print("Equipped id : "..id_equipped);
