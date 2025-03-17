@@ -412,6 +412,7 @@ function ROUND:GAME_ADD(map,monster,survivor)
         mons = MakeCopy(monster)  ,
         surv = MakeCopy(survivor) ,
         died = {}       ,
+        spec = {}       ,
         time = 120      ,
         obje = "Not Yet Available",
         data_monster  = MakeCopy(monsterData),
